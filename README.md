@@ -6,10 +6,6 @@ GhostDB is designed to speed up dynamic database or API driven websites by stori
 
 GhostDB provides a very large hash table that is distributed across multiple machines and stores large numbers of key-value pairs within the hash table.
 
-The primary purpose of an in-memory key-value store is to provide ultrafast and inexpensive access to copies of data. Most data stores have areas of data that are frequently accessed but seldom updated. Additionally, querying a database is always slower and more expensive than locating a key in a key-value pair cache. Some database queries are especially expensive to perform; for example, queries that involve joins across multiple tables or queries with intensive calculations. By caching such query results, you pay the price of the query once, then you can quickly retrieve the data multiple times without having to re-execute the query. 
-
-Users of GhostDB are able to configure GhostDB nodes on machines they have control over; for example AWS EC2 instances that the client has provisioned. The clients application servers are capable of interacting with GhostDB through the GhostDB SDKs much the same way their application servers may interface with a MySQL or MongoDB instance.
-
 ## GhostDB Cache Node Installation
 
 To install a GhostDB Cache Node on a server you want to act as a cache for your application, you must first obtain a copy of the GhostDB Cache Node binary. 
