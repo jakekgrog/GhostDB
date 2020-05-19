@@ -2,9 +2,7 @@
 
 GhostDB is a distributed, in-memory, general purpose key-value data store that delivers microsecond performance at any scale.
 
-GhostDB is designed to speed up dynamic database or API driven websites by storing data in RAM in order to reduce the number of times an external data source such as a databse or API must be read.
-
-GhostDB provides a very large hash table that is distributed across multiple machines and stores large numbers of key-value pairs within the hash table.
+GhostDB is designed to speed up dynamic database or API driven websites by storing data in RAM in order to reduce the number of times an external data source such as a databse or API must be read. GhostDB provides a very large hash table that is distributed across multiple machines and stores large numbers of key-value pairs within the hash table.
 
 ## GhostDB Cache Node Installation
 
