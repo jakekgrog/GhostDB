@@ -1,5 +1,3 @@
-![ghostdb-log](./res/ghostdb_logo.png "GhostDB Logo")
-
 # GhostDB
 
 GhostDB is a distributed, in-memory, general purpose key-value data store that delivers microsecond performance at any scale.
