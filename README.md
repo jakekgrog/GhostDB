@@ -105,5 +105,5 @@ These are all the configuration options available. Below is an example of a comp
 ```
 
 ## Authors
-* [Jake Grogan] (https://github.com/jakekgrog)
-* [Connor Mulready] (https://github.com/nohclu)
+* [Jake Grogan](https://github.com/jakekgrog)
+* [Connor Mulready](https://github.com/nohclu)
