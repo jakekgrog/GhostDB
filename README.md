@@ -1,3 +1,5 @@
+> The original repository can be found here - [Original GhostDB Repo](https://github.com/jakekgrog/GhostDB)
+
 # GhostDB
 
 GhostDB is a distributed, in-memory, general purpose key-value data store that delivers microsecond performance at any scale.
