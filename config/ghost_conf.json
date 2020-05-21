@@ -1,0 +1,14 @@
+{
+    "keyspaceSize": 65536,
+    "snitchMetricInterval": 10,
+    "watchdogMetricInterval": 10,
+    "defaultTTL": -1,
+    "crawlerInterval": 300,
+    "snapshotInterval": 3600,
+    "snapshotEnabled": true,
+    "persistenceAOF": false,
+    "aofMaxByteSize": 50000000,
+    "entryTimestamp": true,
+    "enableEncryption": true,
+    "passphrase": "MyTestPassphrase"
+}
