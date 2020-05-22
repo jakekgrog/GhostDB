@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/ghostdb/ghostdb-cache-node/api"
 	"github.com/ghostdb/ghostdb-cache-node/cache/lru_cache"
@@ -81,5 +83,14 @@ func main() {
 	api.NodeConfig(cache)
 	log.Println("successfully started GhostDB Node server...")
 	log.Println("GhostDB started successfully...")
+
+	t := make(chan os.Signal)
+	signal.Notify(t, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-t
+		log.Println("exiting...")
+		os.Exit(1)
+	}()
+
 	api.Router()
 }
