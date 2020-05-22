@@ -2,6 +2,7 @@ package snapshot
 
 import (
 	"encoding/json"
+	"log"
 	"time"
 
 	"github.com/ghostdb/ghostdb-cache-node/internal/ghost_config"
@@ -22,7 +23,7 @@ func BuildCache(bs *[]byte) (*lru_cache.LRUCache, error) {
 	err := json.Unmarshal(*bs, &cache)
 	
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to rebuild cache from snapshot: %s", err.Error())
 	}
 
 	cache.Config = config

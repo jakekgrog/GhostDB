@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 
 var configPath string
 
-const log = "/ghostDBPersistence.log"
+const logFile = "/ghostDBPersistence.log"
 const tempLog = "/temp_ghostDBPersistence.log"
 const writeInterval = 1
 
@@ -30,12 +31,12 @@ type logFormat struct {
 // otherwise creates and writes to one
 func BootAOF(cache *lru_cache.LRUCache, maxAOFSize int64) {
 	configPath, _ = os.UserConfigDir()
-	_, err := os.Stat(configPath + log)
+	_, err := os.Stat(configPath + logFile)
 	if err == nil {
-		BuildCache(cache, configPath+log)
+		BuildCache(cache, configPath+logFile)
 		go flushBuffer(cache, maxAOFSize)
 	} else {
-		createAOF(configPath + log)
+		createAOF(configPath + logFile)
 		go flushBuffer(cache, maxAOFSize)
 	}
 }
@@ -43,7 +44,7 @@ func BootAOF(cache *lru_cache.LRUCache, maxAOFSize int64) {
 func createAOF(logPath string) {
 	file, err := os.Create(logPath)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create AOF log file: %s", err.Error())
 	}
 	buf := bufio.NewWriter(file)
 	buf.WriteString("---Created: " + time.Now().Format(time.RFC850) + "---\n")
@@ -63,9 +64,9 @@ func flushBuffer(cache *lru_cache.LRUCache, maxAOFSize int64) {
 }
 
 func appendBufferContent(dualWrite bool) {
-	file, err := os.OpenFile(configPath+log, os.O_APPEND|os.O_WRONLY, 0600)
+	file, err := os.OpenFile(configPath+logFile, os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to write to AOF log file: %s", err.Error())
 	}
 	for _, v := range lru_cache.GetBufferBytes() {
 		file.WriteString(string(v))
@@ -86,20 +87,20 @@ func reduceAOF(cache *lru_cache.LRUCache) {
 	}
 	file, err := os.OpenFile(configPath+tempLog, os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create temporary AOF log file for AOF reduction: %s", err.Error())
 	}
 	for _, v := range tmpBuffer.Bytes() {
 		file.WriteString(string(v))
 	}
 	file.Close()
 	tmpBuffer.Reset()
-	os.Rename(configPath+tempLog, configPath+log)
+	os.Rename(configPath+tempLog, configPath+logFile)
 }
 
 func getAOFSize() int64 {
-	file, err := os.Stat(configPath + log)
+	file, err := os.Stat(configPath + logFile)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to retrieve AOF log file information: %s", err.Error())
 	}
 	return file.Size()
 }

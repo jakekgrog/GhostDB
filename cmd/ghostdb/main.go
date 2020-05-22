@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	"github.com/ghostdb/ghostdb-cache-node/api"
@@ -32,13 +33,14 @@ func init() {
 	// Create snitch and watchdog logfiles if they do not exist
 	snitchFile, err := os.OpenFile(configPath+snitch.SnitchLogFileName, os.O_WRONLY | os.O_CREATE | os.O_APPEND, 0644)
 	if err != nil {
+		log.Fatalf("Failed to create or read snitch log file: %s", err.Error())
 		panic(err)
 	}
 	defer snitchFile.Close()
 
 	watchdogFile, err := os.OpenFile(configPath + watchDog.WatchDogLogFilePath, os.O_WRONLY | os.O_CREATE | os.O_APPEND, 0644)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Failed to create or read watchdog log file: %s", err.Error())
 	}
 	defer watchdogFile.Close()
 
@@ -48,14 +50,18 @@ func init() {
 		if _, err := os.Stat(configPath + snapshot.SnitchLogFilename); err == nil {
 			bytes := snapshot.ReadSnapshot(config.EnableEncryption, config.Passphrase)
 			cache, _ = snapshot.BuildCache(bytes)
+			log.Println("successfully booted from snapshot...")
 		} else {
 			cache = lru_cache.NewLRU(config) 
+			log.Println("successfully booted new cache...")
 		}
 	} else {
 		cache = lru_cache.NewLRU(config)
 		if config.PersistenceAOF {
 			append_only_file.BootAOF(cache, config.AofMaxBytes)
+			log.Println("successfully booted from AOF...")
 		}
+		log.Println("successfully booted new cache...")
 	}
 
 	crawlerScheduler = scheduler.NewCrawlerScheduler(config.CrawlerInterval)
@@ -65,10 +71,15 @@ func init() {
 
 func main() {
 	go scheduler.StartCrawlers(cache, crawlerScheduler)
+	log.Println("successfully started crawler scheduler...")
 	go snitch.StartSnitch(snitchScheduler)
+	log.Println("successfully started snitch monitor...")
 	if config.SnapshotEnabled {
 		go scheduler.StartSnapshotter(cache, snapshotScheduler)
+		log.Println("successfully started snapshot scheduler...")
 	}
 	api.NodeConfig(cache)
+	log.Println("successfully started GhostDB Node server...")
+	log.Println("GhostDB started successfully...")
 	api.Router()
 }
