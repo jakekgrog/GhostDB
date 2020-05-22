@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -258,7 +259,7 @@ func GetWatchdogMetrics() []ReadWatchDog {
 
 	file, err := os.OpenFile(configPath+WatchDogLogFilePath, os.O_RDONLY, 0600)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to open watchdog log file: %s", err.Error())
 	}
 	var entries []ReadWatchDog
 	scanner := bufio.NewScanner(file)

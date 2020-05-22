@@ -1,6 +1,7 @@
 package lru_cache
 
 import (
+	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -241,7 +242,7 @@ func (cache *LRUCache) Delete(key string) string {
 		_, err := linked_list.RemoveNode(cache.DLL, nodeToRemove)
 
 		if err != nil {
-			panic(err)
+			log.Println("failed to remove key-value pair")
 		}
 
 		atomic.AddInt32(&cache.Count, -1)

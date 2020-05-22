@@ -3,6 +3,7 @@ package append_only_file
 import (
 	"bufio"
 	"encoding/json"
+	"log"
 	"os"
 	"strconv"
 
@@ -14,7 +15,7 @@ import (
 func BuildCache(cache *lru_cache.LRUCache, logPath string) {
 	file, err := os.Open(logPath)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to open AOF log file: %s", err.Error())
 	}
 	scanner := bufio.NewScanner(file)
 	scanner.Scan() //Ignore creation date
@@ -33,13 +34,13 @@ func BuildCache(cache *lru_cache.LRUCache, logPath string) {
 		case "put":
 			n, err := strconv.ParseInt(lf.TTL, 10, 64)
 			if err != nil {
-				panic(err)
+				log.Fatalf("failed to parse AOF log entry: %s", err.Error())
 			}
 			cache.Put(lf.Key, lf.Value, n)
 		case "add":
 			n, err := strconv.ParseInt(lf.TTL, 10, 64)
 			if err != nil {
-				panic(err)
+				log.Fatalf("failed to parse AOF log entry: %s", err.Error())
 			}
 			cache.Add(lf.Key, lf.Value, n)
 		case "delete":

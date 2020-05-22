@@ -11,6 +11,7 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 
 	"github.com/ghostdb/ghostdb-cache-node/cache/lru_cache"
@@ -37,14 +38,14 @@ func CreateSnapshot(cache *lru_cache.LRUCache, encryption bool, passphrase ...st
 
 	w, err := gzip.NewWriterLevel(f, gzip.BestCompression)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create new snapshot writer: %s", err.Error())
 	}
 
 	if encryption {
 		encryptedData, err := EncryptData(serialized, passphrase[0])
 		if err != nil {
 			w.Close()
-			panic(err)
+			log.Fatalf("failed to encrypt snapshot: %s", err.Error())
 		}
 		w.Write(encryptedData)
 	} else {
@@ -65,7 +66,7 @@ func ReadSnapshot(encryption bool, passphrase ...string) *[]byte {
 	configPath, _ := os.UserConfigDir()
 	snap, err := os.Open(configPath+SnitchLogFilename)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to open snapshot: %s", err.Error())
 	}
 
 	defer snap.Close()
@@ -73,7 +74,7 @@ func ReadSnapshot(encryption bool, passphrase ...string) *[]byte {
 	file, err := gzip.NewReader(snap)
 
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to create gzip reader: %s", err.Error())
 	}
 
 	byteStream, _ := ioutil.ReadAll(file)
@@ -81,7 +82,7 @@ func ReadSnapshot(encryption bool, passphrase ...string) *[]byte {
 	if encryption {
 		serializedData, err := DecryptData(byteStream, passphrase[0])
 		if err != nil {
-			panic(err)
+			log.Fatalf("failed to decrypt snapshot: %s", err.Error())
 		}
 		return &serializedData
 	} else {

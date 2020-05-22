@@ -3,6 +3,7 @@ package snitch
 import (
 	"bufio"
 	"encoding/json"
+	"log"
 	"os"
 	"runtime"
 	"time"
@@ -188,14 +189,14 @@ func StartSnitchMonitor() {
 
 	file, err := os.OpenFile(configPath+SnitchLogFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to open snitch log file: %s", err.Error())
 	}
 	defer file.Close()
 
 	// Underscore shows bytes written (FOR USE IN WATCHDOG METRICS)
 	file.Write(metrics)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to write to snitch log: %s", err.Error())
 	}
 
 	// Sets the finalizer associated with the object
@@ -211,7 +212,7 @@ func GetSnitchMetrics() []Snitch {
 
 	file, err := os.Open(configPath + SnitchLogFileName)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to open snitch log file: %s", err.Error())
 	}
 	defer file.Close()
 
