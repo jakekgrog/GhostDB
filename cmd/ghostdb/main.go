@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"os/user"
 	"os/signal"
 	"syscall"
 
@@ -30,10 +31,14 @@ var snapshotScheduler *scheduler.SnapshotScheduler
 func init() {
 	config = ghost_config.InitializeConfiguration()
 
-	configPath, _ := os.UserConfigDir()
+	usr, _ := user.Current()
+	configPath := usr.HomeDir
+	log.Println("LOG PATH: "+configPath)
+
+	err := os.Mkdir(configPath+"/ghostdb", 0777)
 
 	// Create snitch and watchdog logfiles if they do not exist
-	snitchFile, err := os.OpenFile(configPath+snitch.SnitchLogFileName, os.O_WRONLY | os.O_CREATE | os.O_APPEND, 0644)
+	snitchFile, err := os.OpenFile(configPath + snitch.SnitchLogFileName, os.O_WRONLY | os.O_CREATE | os.O_APPEND, 0777)
 	if err != nil {
 		log.Fatalf("Failed to create or read snitch log file: %s", err.Error())
 		panic(err)

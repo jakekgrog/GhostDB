@@ -1,14 +1,19 @@
 [Unit]
-Description=ghostdb
+Description=ghostdb daemon
 ConditionPathExists=/bin/ghostdb
 After=network.target
 
 [Service]
 Type=simple
+User=ghostdbservice
+Group=ghostdbservice
+
 Restart=always
 RestartSec=10
 RestartPreventExitStatus=0
 TimeoutStopSec=10
+
+WorkingDirectory=~
 ExecStart=/bin/ghostdb
 PermissionsStartOnly=true
 StandardOutput=syslog

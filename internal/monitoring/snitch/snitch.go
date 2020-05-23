@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"os/user"
 	"runtime"
 	"time"
 )
@@ -185,9 +186,10 @@ func StartSnitchMonitor() {
 	metrics, _ := json.Marshal(snitch)
 	metrics = append(metrics, "\n"...)
 
-	configPath, _ := os.UserConfigDir()
+	usr, _ := user.Current()
+	configPath := usr.HomeDir
 
-	file, err := os.OpenFile(configPath+SnitchLogFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(configPath + SnitchLogFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatalf("failed to open snitch log file: %s", err.Error())
 	}
@@ -208,7 +210,8 @@ func StartSnitchMonitor() {
 // returns the entries in the log file as a Snitch
 // object array.
 func GetSnitchMetrics() []Snitch {
-	configPath, _ := os.UserConfigDir()
+	usr, _ := user.Current()
+	configPath := usr.HomeDir
 
 	file, err := os.Open(configPath + SnitchLogFileName)
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/user"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -106,7 +107,9 @@ func Boot(writeInterval time.Duration, entryTimestamp bool) *WatchDog {
 	watchDog.WriteInterval = writeInterval
 	watchDog.EntryTimestamp = entryTimestamp
 
-	configPath, _ := os.UserConfigDir()
+	usr, _ := user.Current()
+	configPath := usr.HomeDir
+
 	// Create application metrics file
 	_, err := os.Create(configPath + WatchDogLogFilePath)
 	if err != nil {
@@ -227,12 +230,14 @@ func PutHit(appMetrics *WatchDog) {
 
 // Dump writes the contents of the watchdog struct to the watchdog log file
 func Dump(appMetrics *WatchDog) {
-	configPath, _ := os.UserConfigDir()
-	file, err := os.OpenFile(configPath+WatchDogLogFilePath, os.O_APPEND|os.O_WRONLY, 0777)
+	usr, _ := user.Current()
+	configPath := usr.HomeDir
+
+	file, err := os.OpenFile(configPath + WatchDogLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
 	if err != nil {
 		fmt.Println(err) // Allows the CI runner to test successfully (Update when test_config is working)
 	}
-	//file.WriteString(time.Now().Format(time.RFC850) + " watchDog booted succesffuly...\n")
+	
 	var total string
 	for {
 		time.Sleep(appMetrics.WriteInterval * time.Second)
@@ -255,9 +260,10 @@ func Dump(appMetrics *WatchDog) {
 // GetWatchdogMetrics reads the Watchdog log
 // unmarshals each entry and appends it to a slice
 func GetWatchdogMetrics() []ReadWatchDog {
-	configPath, _ := os.UserConfigDir()
+	usr, _ := user.Current()
+	configPath := usr.HomeDir
 
-	file, err := os.OpenFile(configPath+WatchDogLogFilePath, os.O_RDONLY, 0600)
+	file, err := os.OpenFile(configPath + WatchDogLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatalf("failed to open watchdog log file: %s", err.Error())
 	}
