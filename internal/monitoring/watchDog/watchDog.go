@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/user"
@@ -13,7 +14,11 @@ import (
 )
 
 // WatchDogLogFilePath Log file path
-const WatchDogLogFilePath = "/ghostdb/ghostdb_watchDog.log"
+const (
+	WatchDogLogFilePath = "/ghostdb/ghostdb_watchDog.log"
+	WatchDogTempFileName = "/ghostdb/ghostdb_watchDog_tmp.log"
+	MaxWatchDogLogSize = 10
+)
 
 // WatchDog struct is used to record cache events
 type WatchDog struct {
@@ -233,14 +238,28 @@ func Dump(appMetrics *WatchDog) {
 	usr, _ := user.Current()
 	configPath := usr.HomeDir
 
-	file, err := os.OpenFile(configPath + WatchDogLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
-	if err != nil {
-		fmt.Println(err) // Allows the CI runner to test successfully (Update when test_config is working)
-	}
-	
 	var total string
 	for {
 		time.Sleep(appMetrics.WriteInterval * time.Second)
+
+		needRotate, err := logMustRotate(configPath + WatchDogLogFilePath)
+		if err != nil {
+			log.Fatalf("failed to check if log needs to be rotated: %s", err.Error())
+		}
+		if needRotate {
+			nBytes, err := Rotate()
+			if err != nil {
+				log.Fatalf("failed to rotate watchdog log file: %s", err.Error())
+			}
+			log.Printf("successfully rotated watchdog log file: %d bytes rotated", nBytes)
+		}
+
+		file, err := os.OpenFile(configPath + WatchDogLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
+		if err != nil {
+			fmt.Println(err) // Allows the CI runner to test successfully (Update when test_config is working)
+		}
+		defer file.Close()
+
 		if appMetrics.EntryTimestamp {
 			total = fmt.Sprintf(`{"Timestamp": "%s", "TotalRequsts": %d, `, time.Now().Format(time.RFC3339), appMetrics.TotalRequests)
 		} else {
@@ -253,7 +272,7 @@ func Dump(appMetrics *WatchDog) {
 		deleteMetrics := fmt.Sprintf(`"DeleteRequests": %d, "NotFound": %d, `, appMetrics.DeleteRequests, appMetrics.NotFound)
 		flushMetrics := fmt.Sprintf(`"FlushRequests": %d, "ErrFlush": %d}`+"\n", appMetrics.FlushRequests, appMetrics.ErrFlush)
 
-		file.WriteString(total + getMetrics + putMetrics + addMetrics + deleteMetrics + flushMetrics)
+		file.WriteString(total + getMetrics + putMetrics + addMetrics + deleteMetrics + flushMetrics)	
 	}
 }
 
@@ -276,4 +295,108 @@ func GetWatchdogMetrics() []ReadWatchDog {
 		entries = append(entries, entry)
 	}
 	return entries
+}
+
+func logMustRotate(logfile string) (bool, error) {
+	fi, err := os.Stat(logfile)
+	if err != nil {
+		return false, err
+	}
+	// get the size
+	size := fi.Size()
+	if size >= MaxWatchDogLogSize {
+		return true, nil
+	}
+	return false, nil
+}
+
+// Rotate rotates the main watchdog log by copying the contents of the 
+// log file to a temporary log and clearing the main log.
+// If there is data in the temp log file, it is cleared. 
+func Rotate() (int64, error) {
+	usr, _ := user.Current()
+	configPath := usr.HomeDir
+
+	src := configPath + WatchDogLogFilePath
+	tmp := configPath + WatchDogTempFileName
+
+	// Check if tmp file exists
+	exists, err := tmpFileExists(tmp)
+	if err != nil {
+		return 0, fmt.Errorf("Error when checking for temp log existence: %s", err.Error())
+	}
+
+	// If it exists, clear it
+	if exists {
+		_, err := cleanFile(tmp)
+		if err != nil {
+			return 0, fmt.Errorf("failed to clean temp log")
+		}
+	}
+
+	// Open the source file (main log)
+	sourceFileStat, err := os.Stat(src)
+	if err != nil {
+		return 0, fmt.Errorf("failed to stat log file")
+	}
+
+	if !sourceFileStat.Mode().IsRegular() {
+		return 0, fmt.Errorf("%s is not a regular file", src)
+	}
+
+	source, err := os.Open(src)
+	if err != nil {
+		return 0, err
+	}
+	defer source.Close()
+
+	// Open the tmp log (or create if it doesn't exist)
+	dst, err := os.OpenFile(tmp, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return 0, fmt.Errorf("failed to open %s temporary log file", tmp)
+	}
+	defer dst.Close()
+
+	// Copy the contents of main log to tmp log
+	nBytes, err := io.Copy(dst, source)
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to copy log to temp log")
+	}
+
+	// clear the main log
+	_, err = cleanFile(src)
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to clean watchdog log file")
+	}
+
+	return nBytes, err
+}
+
+func tmpFileExists(tmpFilename string) (bool, error) {
+	if _, err := os.Stat(tmpFilename); os.IsNotExist(err) {
+		dst, err := os.OpenFile(tmpFilename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return false, fmt.Errorf("failed to open %s temporary log file", tmpFilename)
+		}
+		defer dst.Close()
+	}
+	return true, nil
+}
+
+func cleanFile(filePath string) (bool, error) {
+	err := os.Remove(filePath)
+
+	if err != nil {
+		return false, err
+	}
+
+	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return false, err
+	}
+	defer file.Close()
+
+	return true, err
 }
