@@ -3,6 +3,7 @@ package snitch
 import (
 	"fmt"
 	"os"
+	"os/user"
 	"testing"
 	"time"
 
@@ -15,7 +16,8 @@ func TestSnitchMonitor(t *testing.T) {
 	time.Sleep(6 * time.Second)
 	StopSnitch(sch)
 
-	configPath, _ := os.UserConfigDir()
+	usr, _ := user.Current()
+	configPath := usr.HomeDir
 
 	utils.AssertEqual(t, fileExists(configPath+SnitchLogFileName), true, "")
 	utils.AssertEqual(t, fileNotEmpty(configPath+SnitchLogFileName), true, "")

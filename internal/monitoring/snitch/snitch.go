@@ -15,7 +15,7 @@ import (
 const (
 	SnitchLogFileName = "/ghostdb/ghostdb_snitch.log"
 	SnitchTempFileName = "/ghostdb/ghostdb_snitch_tmp.log"
-	MaxSnitchLogSize = 20
+	MaxSnitchLogSize = 10000000
 )
 
 type Snitch struct {
@@ -325,7 +325,11 @@ func Rotate() (int64, error) {
 
 func tmpFileExists(tmpFilename string) (bool, error) {
 	if _, err := os.Stat(tmpFilename); os.IsNotExist(err) {
-		return false, err
+		dst, err := os.OpenFile(tmpFilename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return false, fmt.Errorf("failed to open %s temporary log file", tmpFilename)
+		}
+		defer dst.Close()
 	}
 	return true, nil
 }
