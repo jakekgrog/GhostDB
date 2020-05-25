@@ -3,6 +3,7 @@ package lru_cache
 import (
 	"bufio"
 	"os"
+	"os/user"
 	"testing"
 	"time"
 
@@ -20,7 +21,8 @@ func TestWatchDog(t *testing.T) {
 	cache = lru_cache.NewLRU(config)
 
 	//Delete pre-existing metrics
-	configPath, _ := os.UserConfigDir()
+	usr, _ := user.Current()
+	configPath := usr.HomeDir
 	os.Remove(configPath + WatchDogLogFilePath)
 	os.Remove(configPath + "/ghostDBPersistence.log")
 
@@ -40,6 +42,9 @@ func TestWatchDog(t *testing.T) {
 	cache.Flush()
 	time.Sleep(11 * time.Second)
 
+	utils.AssertEqual(t, fileExists(configPath+WatchDogLogFilePath), true, "")
+	utils.AssertEqual(t, fileNotEmpty(configPath+WatchDogLogFilePath), true, "")
+
 	file, err := os.Open(configPath + WatchDogLogFilePath)
 	if err != nil {
 		panic(err)
@@ -52,5 +57,29 @@ func TestWatchDog(t *testing.T) {
 	metrics := scanner.Text()
 	expectedOutput := `{"TotalHits": 12, "TotalGets": 3, "CacheMiss": 1, "TotalPuts": 2, "TotalAdds": 3, "NotStored": 0, "TotalDeletes": 2, "NotFound": 1, "TotalFlushes": 2, "ErrFlush": 2}`
 	utils.AssertEqual(t, metrics, expectedOutput, "")
+
+	
 	return
+}
+
+func fileExists(filename string) bool {
+	file, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+
+	return !file.IsDir()
+}
+
+func fileNotEmpty(filename string) bool {
+	file, err := os.Stat(filename)
+	if err != nil {
+		return false
+	}
+
+	size := file.Size()
+	if size > 0 {
+		return true
+	}
+	return false
 }
