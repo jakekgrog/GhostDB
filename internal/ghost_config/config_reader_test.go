@@ -17,5 +17,5 @@ func TestInitializeConfiguration(t *testing.T) {
 	utils.AssertEqual(t, conf.PersistenceAOF, false, "")
 	utils.AssertEqual(t, conf.EntryTimestamp, true, "")
 	utils.AssertEqual(t, conf.EnableEncryption, true, "")
-	utils.AssertEqual(t, conf.Passphrase, "SUPPLY_PASSPHRASE", "")
+	utils.AssertEqual(t, conf.Passphrase, "SUPPLY_ME", "")
 }

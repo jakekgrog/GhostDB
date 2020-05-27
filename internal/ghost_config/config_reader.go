@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	CONFIG_FILE = "github.com/ghostdb/ghostdb-cache-node/config/ghost_conf.json"
+	CONFIG_FILE_LINUX = "/etc/ghostdb/ghostdbConf.json"
 
 	DEFAULT_KEYSPACE_SIZE            = 65536
 	DEFAULT_SNITCH_METRIC_INTERVAL   = 300  // 5 minutes
@@ -19,7 +19,7 @@ const (
 	DEFAULT_AOF_MAX_BYTES            = 50000000 // 50MB
 	DEFAULT_ENTRY_TIMESTAMP          = true  // Enable timestamps in watchdog logs
 	DEFAULT_ENABLE_ENCRYPTION        = true
-	DEFAULT_PASSPHRASE               = "SUPPLY_PASSPHRASE"
+	DEFAULT_PASSPHRASE               = "SUPPLY_ME"
 )
 
 type Configuration struct {
@@ -109,7 +109,7 @@ func (conf *Configuration) SetDefaultParams() {
 func InitializeFromConfig() (Configuration, error) {
 	var config Configuration
 
-	file, err := ioutil.ReadFile(CONFIG_FILE)
+	file, err := ioutil.ReadFile(CONFIG_FILE_LINUX)
 	if err != nil {
 		return Configuration{}, err
 	}
