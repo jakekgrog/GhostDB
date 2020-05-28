@@ -26,7 +26,7 @@ type Cache interface {
 	// Put will add a key/value pair to the cache, possibly
 	// overwriting an existing key/value pair. Put will evict
 	// a key/value pair if the cache is full.
-	Put(k string, v string, ttl int64)
+	Put(k string, v string, ttl int64) string
 
 	// Get will fetch a key/value pair from the cache
 	Get(k string) string
@@ -134,35 +134,53 @@ func (cache *LRUCache) Get(key string) string {
 // Put will add a key/value pair to the cache, possibly
 // overwriting an existing key/value pair. Put will evict
 // a key/value pair if the cache is full.
-func (cache *LRUCache) Put(key string, value string, ttl int64) {
+func (cache *LRUCache) Put(key string, value string, ttl int64) string {
 
 	cache.Mux.Lock()
 	watchDog.PutHit(cache.WatchDog)
 	cache.Mux.Unlock()
 
 	if !cache.Full {
+		inCache := keyInCache(cache, key)
+
 		newNode, _ := linked_list.Insert(cache.DLL, key, value, ttl)
 
 		insertIntoHashtable(cache, key, newNode)
 
-		cache.Mux.Lock()
-		atomic.AddInt32(&cache.Count, 1)
-		cache.Mux.Unlock()
+		if !inCache {
+			cache.Mux.Lock()
+			atomic.AddInt32(&cache.Count, 1)
+			cache.Mux.Unlock()
+		}
+
 		if cache.Count == cache.Size {
 			cache.Full = true
 		}
+
 	} else {
-		n, _ := linked_list.RemoveLast(cache.DLL)
+		// SPECIAL CASE: Just update the value
+		inCache := keyInCache(cache, key)
+		if inCache {
+			// Get the value node
+			node, _ := cache.Hashtable[key]
+	
+			// Update the value
+			node.Value = value
+			return STORED
+		} else {
+			n, _ := linked_list.RemoveLast(cache.DLL)
 
-		deleteFromHashtable(cache, n.Key)
+			deleteFromHashtable(cache, n.Key)
 
-		newNode, _ := linked_list.Insert(cache.DLL, key, value, ttl)
-		insertIntoHashtable(cache, key, newNode)
+			newNode, _ := linked_list.Insert(cache.DLL, key, value, ttl)
+			insertIntoHashtable(cache, key, newNode)
+		}
 	}
 
 	if cache.Config.PersistenceAOF {
 		WriteBuffer("put", key, value, ttl)
 	}
+	return STORED
 }
 
 func deleteFromHashtable(cache *LRUCache, key string) {
@@ -191,11 +209,15 @@ func (cache *LRUCache) Add(key string, value string, ttl int64) string {
 		return NOT_STORED
 	}
 	if !cache.Full {
+		inCache := keyInCache(cache, key)
+
 		newNode, _ := linked_list.Insert(cache.DLL, key, value, ttl)
 
 		insertIntoHashtable(cache, key, newNode)
 
-		atomic.AddInt32(&cache.Count, 1)
+		if !inCache {
+			atomic.AddInt32(&cache.Count, 1)
+		}
 
 		if cache.Count == cache.Size {
 			cache.Full = true
@@ -223,6 +245,7 @@ func (cache *LRUCache) Delete(key string) string {
 	cache.Mux.Lock()
 	watchDog.DeleteHit(cache.WatchDog)
 	cache.Mux.Unlock()
+
 	cache.Mux.Lock()
 	_, ok := cache.Hashtable[key]
 	cache.Mux.Unlock()
@@ -245,7 +268,10 @@ func (cache *LRUCache) Delete(key string) string {
 			log.Println("failed to remove key-value pair")
 		}
 
+		cache.Mux.Lock()
 		atomic.AddInt32(&cache.Count, -1)
+		cache.Mux.Unlock()
+
 		cache.Full = false
 		if cache.Config.PersistenceAOF {
 			WriteBuffer("delete", key, "NA", -1)
@@ -267,6 +293,7 @@ func (cache *LRUCache) Flush() string {
 	cache.Mux.Lock()
 	watchDog.FlushHit(cache.WatchDog)
 	cache.Mux.Unlock()
+
 	for k := range cache.Hashtable {
 		n, _ := linked_list.RemoveLast(cache.DLL)
 		if n == nil {
@@ -277,6 +304,7 @@ func (cache *LRUCache) Flush() string {
 		atomic.AddInt32(&cache.Count, -1)
 		cache.Mux.Unlock()
 	}
+	
 	if cache.Count == int32(0) {
 		if cache.Config.PersistenceAOF {
 			WriteBuffer("flush", "NA", "NA", -1)
@@ -301,4 +329,14 @@ func insertIntoHashtable(cache *LRUCache, key string, node *linked_list.Node) {
 	cache.Mux.Lock()
 	defer cache.Mux.Unlock()
 	cache.Hashtable[key] = node
+}
+
+func keyInCache(cache *LRUCache, key string) (bool) {
+	cache.Mux.Lock()
+	defer cache.Mux.Unlock()
+	_, ok := cache.Hashtable[key] 
+	if ok {
+		return true
+	}
+	return false
 }

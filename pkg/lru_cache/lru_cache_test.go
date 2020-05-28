@@ -62,6 +62,12 @@ func TestLru(t *testing.T) {
 	message = cache.Delete("USA")
 	utils.AssertEqual(t, lru_cache.NOT_FOUND, message, "")
 
+	message = cache.Put("England", "London", -1)
+	utils.AssertEqual(t, lru_cache.STORED, message, "")
+
+	message = cache.Put("England", "London", -1)
+	utils.AssertEqual(t, lru_cache.STORED, message, "")
+
 	message = cache.Flush()
 	utils.AssertEqual(t, lru_cache.FLUSHED, message, "")
 

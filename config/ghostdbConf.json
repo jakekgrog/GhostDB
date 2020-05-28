@@ -10,5 +10,5 @@
     "aofMaxByteSize": 50000000,
     "entryTimestamp": true,
     "enableEncryption": true,
-    "passphrase": "MyTestPassphrase"
+    "passphrase": "SUPPLY_ME"
 }
