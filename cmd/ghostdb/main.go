@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/ghostdb/ghostdb-cache-node/api"
+	"github.com/ghostdb/ghostdb-cache-node/server"
 	"github.com/ghostdb/ghostdb-cache-node/cache/lru_cache"
 	"github.com/ghostdb/ghostdb-cache-node/cache/scheduler"
 	"github.com/ghostdb/ghostdb-cache-node/internal/ghost_config"
@@ -85,7 +85,7 @@ func main() {
 		go scheduler.StartSnapshotter(cache, snapshotScheduler)
 		log.Println("successfully started snapshot scheduler...")
 	}
-	api.NodeConfig(cache)
+	server.NodeConfig(cache)
 	log.Println("successfully started GhostDB Node server...")
 	log.Println("GhostDB started successfully...")
 
@@ -97,5 +97,5 @@ func main() {
 		os.Exit(1)
 	}()
 
-	api.Router()
+	server.Router()
 }

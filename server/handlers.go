@@ -1,4 +1,4 @@
-package api
+package server
 
 import (
 	"encoding/json"
@@ -13,48 +13,23 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+// Global pointer to cache object for server
 var cache *lru_cache.LRUCache
 
+// Represents a key-value pair body object
 type kvPair struct {
 	Key   string `json:"Key"`
 	Value string `json:"Value"`
 	TTL   int64  `json:"TTL"`
 }
 
+// Represents response message object
 type message struct {
 	Message string `json:"Message"`
 }
 
-// Router passes control to handlers
-func Router() {
-	routes := func(ctx *fasthttp.RequestCtx) {
-		switch string(ctx.Path()) {
-		case "/get":
-			getValue(ctx)
-		case "/put":
-			putValue(ctx)
-		case "/add":
-			addValue(ctx)
-		case "/delete":
-			deleteValue(ctx)
-		case "/flush":
-			flushCache(ctx)
-		case "/getSnitchMetrics":
-			getSnitchMetrics(ctx)
-		case "/getWatchdogMetrics":
-			getWatchdogMetrics(ctx)
-		case "/ping":
-			ping(ctx)
-		case "/nodeSize":
-			nodeSize(ctx)
-		default:
-			ctx.Error("not found", fasthttp.StatusNotFound)
-		}
-	}
-	fasthttp.ListenAndServe(":7991", routes)
-}
-
-func getValue(ctx *fasthttp.RequestCtx) {
+// Handle GET requests
+func getValueHandler(ctx *fasthttp.RequestCtx) {
 	var kv kvPair
 
 	body := ctx.PostBody()
@@ -86,7 +61,8 @@ func getValue(ctx *fasthttp.RequestCtx) {
 	}
 }
 
-func flushCache(ctx *fasthttp.RequestCtx) {
+// Handle FLUSH requests
+func flushCacheHandler(ctx *fasthttp.RequestCtx) {
 	var msg message
 
 	msg.Message = cache.Flush()
@@ -97,7 +73,8 @@ func flushCache(ctx *fasthttp.RequestCtx) {
 	}
 }
 
-func addValue(ctx *fasthttp.RequestCtx) {
+// Handle ADD requests
+func addValueHandler(ctx *fasthttp.RequestCtx) {
 	var kv kvPair
 	var msg message
 	body := ctx.PostBody()
@@ -128,7 +105,8 @@ func addValue(ctx *fasthttp.RequestCtx) {
 	return
 }
 
-func deleteValue(ctx *fasthttp.RequestCtx) {
+// Handle DELETE requests
+func deleteValueHandler(ctx *fasthttp.RequestCtx) {
 	var kv kvPair
 	var msg message
 
@@ -161,7 +139,8 @@ func deleteValue(ctx *fasthttp.RequestCtx) {
 	return
 }
 
-func putValue(ctx *fasthttp.RequestCtx) {
+// Handle PUT requests
+func putValueHandler(ctx *fasthttp.RequestCtx) {
 	var kv kvPair
 	body := ctx.PostBody()
 
@@ -192,7 +171,8 @@ func putValue(ctx *fasthttp.RequestCtx) {
 	return
 }
 
-func getSnitchMetrics(ctx *fasthttp.RequestCtx) {
+// Handle SNITCH requests
+func getSnitchMetricsHandler(ctx *fasthttp.RequestCtx) {
 	var msg message
 
 	bytes, _ := json.Marshal(snitch.GetSnitchMetrics())
@@ -206,7 +186,8 @@ func getSnitchMetrics(ctx *fasthttp.RequestCtx) {
 	}
 }
 
-func getWatchdogMetrics(ctx *fasthttp.RequestCtx) {
+// Handle WATCHDOG requests
+func getWatchdogMetricsHandler(ctx *fasthttp.RequestCtx) {
 	var msg message
 
 	bytes, _ := json.Marshal(watchDog.GetWatchdogMetrics())
@@ -220,12 +201,14 @@ func getWatchdogMetrics(ctx *fasthttp.RequestCtx) {
 	}
 }
 
-func ping(ctx *fasthttp.RequestCtx) {
+// Handle PING requests
+func pingHandler(ctx *fasthttp.RequestCtx) {
 	ctx.SetStatusCode(200)
 	return
 }
 
-func nodeSize(ctx *fasthttp.RequestCtx) {
+// Handle NODE_SIZE requests
+func nodeSizeHandler(ctx *fasthttp.RequestCtx) {
 	var msg message
 
 	count := cache.CountKeys();
@@ -239,15 +222,15 @@ func nodeSize(ctx *fasthttp.RequestCtx) {
 	}
 }
 
-func purgeValue(w http.ResponseWriter, r *http.Request) error {
+func purgeValueHandler(w http.ResponseWriter, r *http.Request) error {
 	return errors.New("Not Implemented")
 }
 
-func batchGetValues(w http.ResponseWriter, r *http.Request) error {
+func batchGetValuesHandler(w http.ResponseWriter, r *http.Request) error {
 	return errors.New("Not Implemented")
 }
 
-func batchPutValues(w http.ResponseWriter, r *http.Request) error {
+func batchPutValuesHandler(w http.ResponseWriter, r *http.Request) error {
 	return errors.New("Not Implemented")
 }
 
