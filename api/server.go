@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/ghostdb/ghostdb-cache-node/cache/lru_cache"
@@ -44,6 +45,8 @@ func Router() {
 			getWatchdogMetrics(ctx)
 		case "/ping":
 			ping(ctx)
+		case "/nodeSize":
+			nodeSize(ctx)
 		default:
 			ctx.Error("not found", fasthttp.StatusNotFound)
 		}
@@ -220,6 +223,20 @@ func getWatchdogMetrics(ctx *fasthttp.RequestCtx) {
 func ping(ctx *fasthttp.RequestCtx) {
 	ctx.SetStatusCode(200)
 	return
+}
+
+func nodeSize(ctx *fasthttp.RequestCtx) {
+	var msg message
+
+	count := cache.CountKeys();
+	msg.Message = string(strconv.FormatInt(int64(count), 10))
+
+	ctx.Response.Header.Set("Content-Type", "application/json; charset=UTF-8")
+	ctx.SetStatusCode(http.StatusOK)
+
+	if err := json.NewEncoder(ctx).Encode(msg); err != nil {
+		panic(err)
+	}
 }
 
 func purgeValue(w http.ResponseWriter, r *http.Request) error {

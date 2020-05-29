@@ -30,3 +30,4 @@ install-dev:
 	sudo chown -R ghostdbservice:ghostdbservice /home/ghostdbservice
 	systemctl daemon-reload
 	systemctl start ghostdb
+	sudo rm $(NAME)
