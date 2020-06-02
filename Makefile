@@ -4,7 +4,7 @@ GO_CLEAN=$(GO_CMD) clean
 GO_TEST=$(GO_CMD) test
 GO_GET=$(GO_CMD) get
 NAME=ghostdb
-DIR=./cmd/ghostdb
+DIR=./cmd
 CONF_DIR=/etc/ghostdb
 
 all: build install group
