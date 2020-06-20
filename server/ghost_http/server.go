@@ -1,7 +1,13 @@
 package ghost_http
 
 import (
+	"encoding/json"
+	"net/http"
+	
 	"github.com/valyala/fasthttp"
+	"github.com/ghostdb/ghostdb-cache-node/store/base"
+	"github.com/ghostdb/ghostdb-cache-node/store/request"
+	//"github.com/ghostdb/ghostdb-cache-node/store/response"
 )
 
 var (
@@ -16,30 +22,36 @@ var (
 	GHOST_NODE_SIZE = "/nodeSize"
 )
 
+var store *base.Store
+
+// NodeConfig configures the store for the server
+func NodeConfig(s *base.Store) {
+	store = s
+}
+
 // Router passes control to handlers
 func Router() {
 	routes := func(ctx *fasthttp.RequestCtx) {
-		switch string(ctx.Path()) {
-		case GHOST_GET:
-			getValueHandler(ctx)
-		case GHOST_PUT:
-			putValueHandler(ctx)
-		case GHOST_ADD:
-			addValueHandler(ctx)
-		case GHOST_DELETE:
-			deleteValueHandler(ctx)
-		case GHOST_FLUSH:
-			flushCacheHandler(ctx)
-		case GHOST_SNITCH:
-			getSnitchMetricsHandler(ctx)
-		case GHOST_WATCHDOG:
-			getWatchdogMetricsHandler(ctx)
-		case GHOST_PING:
-			pingHandler(ctx)
-		case GHOST_NODE_SIZE:
-			nodeSizeHandler(ctx)
-		default:
-			ctx.Error("not found", fasthttp.StatusNotFound)
+		var req request.CacheRequest
+		var path = ctx.Path()
+		var cmd = string(path[1:])
+		var body = ctx.PostBody()
+
+		if err := json.Unmarshal(body, &req); err != nil {
+			ctx.Request.Header.Set("Content-Type", "application/json; charset=UTF-8")
+			ctx.SetStatusCode(422)
+			if err := json.NewEncoder(ctx).Encode(err); err != nil {
+				panic(err)
+			}
+		}
+
+		var res = store.Execute(cmd, req)
+		
+		ctx.Response.Header.Set("Content-Type", "application/json; charset=UTF-8")
+		ctx.SetStatusCode(http.StatusOK)
+
+		if err := json.NewEncoder(ctx).Encode(res); err != nil {
+			panic(err)
 		}
 	}
 	fasthttp.ListenAndServe(":7991", routes)

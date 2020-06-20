@@ -12,7 +12,7 @@ type Node struct {
 	Key       string
 
 	// Value of the key-value pair
-	Value     string
+	Value     interface{}
 
 	// TTL is the time-to-live for the key-value pair
 	TTL       int64
@@ -88,7 +88,7 @@ func InitList() *List {
 
 // Insert will insert key-value pairs nodes into the doubly
 // linked list.
-func Insert(ll *List, key string, value string, ttl int64) (*Node, error) {
+func Insert(ll *List, key string, value interface{}, ttl int64) (*Node, error) {
 	// Lock access to the list
 	ll.Mux.Lock()
 	defer ll.Mux.Unlock()

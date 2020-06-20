@@ -5,70 +5,73 @@ import (
 
 	"github.com/ghostdb/ghostdb-cache-node/utils"
 	"github.com/ghostdb/ghostdb-cache-node/config"
+	"github.com/ghostdb/ghostdb-cache-node/store/request"
 )
 
 func TestLru(t *testing.T) {
 	var config config.Configuration = config.InitializeConfiguration()
 	cache := NewLRU(config)
 	cache.Size = int32(2);
-	cache.Put("England", "London", -1)
-	cache.Put("Ireland", "Dublin", -1)
-
+	cache.Put(request.NewRequestFromValues("England", "London", -1))
+	cache.Put(request.NewRequestFromValues("Ireland", "Dublin", -1))
+	
 	// HEAD -> Dublin -> London
 
-	cache.Put("America", "Washington", -1) // England:London evicted here
+	cache.Put(request.NewRequestFromValues("America", "Washington", -1)) // England:London evicted here
 
 	// HEAD -> Washington -> Dublin
 
-	v1 := cache.Get("England") // Should be a cache miss
-	utils.AssertEqual(t, "CACHE_MISS", v1, "")
+	v1 := cache.Get(request.NewRequestFromValues("England", "", -1)) // Should be a cache miss
+	utils.AssertEqual(t, "CACHE_MISS", v1.Message, "")
 
 	// Ireland should be next to be evicted
 	// If we 'Get' Ireland then it should be considered MRU
 	// And 'America' Should now be LRU
-	v2 := cache.Get("Ireland")
-	utils.AssertEqual(t, "Dublin", v2, "")
+	v2 := cache.Get(request.NewRequestFromValues("Ireland", "", -1))
+	utils.AssertEqual(t, "Dublin", v2.Gobj.Value, "")
 	
 	// HEAD -> Dublin -> Washington
 
-	cache.Put("France", "Paris", -1) // America should be evicted here
+	cache.Put(request.NewRequestFromValues("France", "Paris", -1)) // America should be evicted here
 	
 	// HEAD -> Paris -> Dublin
 
-	v3 := cache.Get("America") // Should be a cache miss
-	utils.AssertEqual(t, CACHE_MISS, v3, "")
+	v3 := cache.Get(request.NewRequestFromValues("America", "", -1)) // Should be a cache miss
+	utils.AssertEqual(t, CACHE_MISS, v3.Message, "")
 	
-	cache.Put("Italy", "Rome", -1) // Ireland should be evicted here
+	cache.Put(request.NewRequestFromValues("Italy", "Rome", -1)) // Ireland should be evicted here
 
 	// HEAD -> Rome -> Paris
 	
-	v4 := cache.Get("France")
-	utils.AssertEqual(t, "Paris", v4, "")
+	v4 := cache.Get(request.NewRequestFromValues("France", "", -1))
+	utils.AssertEqual(t, "Paris", v4.Gobj.Value, "")
 
 	// HEAD -> Paris -> Rome
 
-	message := cache.Add("France", "paris", -1)
-	utils.AssertEqual(t, NOT_STORED, message, "")
+	message := cache.Add(request.NewRequestFromValues("France", "Paris", -1))
+	utils.AssertEqual(t, NOT_STORED, message.Message, "")
 
-	message = cache.Add("Poland", "Warsaw", -1)
-	utils.AssertEqual(t, STORED, message, "")
+	message = cache.Add(request.NewRequestFromValues("Poland", "Warsaw", -1))
+	utils.AssertEqual(t, STORED, message.Message, "")
 
-	message = cache.Delete("Poland")
-	utils.AssertEqual(t, REMOVED, message, "")
+	message = cache.Delete(request.NewRequestFromValues("Poland", "", -1))
+	utils.AssertEqual(t, REMOVED, message.Message, "")
 
-	utils.AssertEqual(t, cache.CountKeys() > 0, true, "")
+	message = cache.CountKeys(request.NewRequestFromValues("Key1", "", -1))
+	utils.AssertEqual(t, message.Gobj.Value.(int32) > 0, true, "")
 
-	message = cache.Delete("USA")
-	utils.AssertEqual(t, NOT_FOUND, message, "")
+	message = cache.Delete(request.NewRequestFromValues("USA", "", -1))
+	utils.AssertEqual(t, NOT_FOUND, message.Message, "")
 
-	message = cache.Put("England", "London", -1)
-	utils.AssertEqual(t, STORED, message, "")
+	message = cache.Put(request.NewRequestFromValues("England", "London", -1))
+	utils.AssertEqual(t, STORED, message.Message, "")
 
-	message = cache.Put("England", "London", -1)
-	utils.AssertEqual(t, STORED, message, "")
+	message = cache.Put(request.NewRequestFromValues("England", "London", -1))
+	utils.AssertEqual(t, STORED, message.Message, "")
 
-	message = cache.Flush()
-	utils.AssertEqual(t, FLUSHED, message, "")
+	message = cache.Flush(request.NewRequestFromValues("Key1", "", -1))
+	utils.AssertEqual(t, FLUSHED, message.Message, "")
 
-	utils.AssertEqual(t, cache.CountKeys(), int32(0), "")
+	message = cache.CountKeys(request.NewRequestFromValues("Key1", "", -1))
+	utils.AssertEqual(t, message.Gobj.Value.(int32), int32(0), "")
 }

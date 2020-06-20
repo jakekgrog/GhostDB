@@ -1,4 +1,4 @@
-package lru
+package monitor
 
 import (
 	"bufio"
@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/ghostdb/ghostdb-cache-node/utils"
+	"github.com/ghostdb/ghostdb-cache-node/constants"
+	"github.com/ghostdb/ghostdb-cache-node/store/response"
 )
 
 // WatchDogLogFilePath Log file path
@@ -126,6 +128,44 @@ func Boot(writeInterval time.Duration, entryTimestamp bool) *WatchDog {
 	go Dump(&watchDog)
 
 	return &watchDog
+}
+
+func WriteMetrics(appMetrics *WatchDog, cmd string, resp response.CacheResponse) {
+	switch cmd {
+	case constants.STORE_GET:
+		GetHit(appMetrics)
+		if resp.Status != 1{
+			CacheMiss(appMetrics)
+		}
+	case constants.STORE_PUT:
+		PutHit(appMetrics)
+		if resp.Status != 1 {
+			NotStored(appMetrics)
+		} else {
+			Stored(appMetrics)
+		}
+	case constants.STORE_ADD:
+		AddHit(appMetrics)
+		if resp.Status != 1 {
+			NotStored(appMetrics)
+		} else {
+			Stored(appMetrics)
+		}
+	case constants.STORE_DELETE:
+		DeleteHit(appMetrics)
+		if resp.Status != 1 {
+			NotFound(appMetrics)
+		} else {
+			Removed(appMetrics)
+		}
+	case constants.STORE_FLUSH:
+		FlushHit(appMetrics)
+		if resp.Status != 1 {
+			ErrFlush(appMetrics)
+		} else {
+			Flushed(appMetrics)
+		}
+	}
 }
 
 // ErrFlush is a setter that increments

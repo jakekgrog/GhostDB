@@ -1,7 +1,10 @@
-package lru
+package persistence
 
 import (
 	"time"
+
+	"github.com/ghostdb/ghostdb-cache-node/store/cache"
+	"github.com/ghostdb/ghostdb-cache-node/config"
 )
 
 // SnapshotScheduler represents a scheduler for the cache snapshotter
@@ -19,14 +22,22 @@ func NewSnapshotScheduler(interval int32) *SnapshotScheduler {
 	return scheduler
 }
 
-// StartSnapshotter starts the snapshot scheduler
-func StartSnapshotter(cache *LRUCache, scheduler *SnapshotScheduler) {
+/**
+* StartSnapshotter will start the cache snapshot scheduler
+* 
+* Snapshots are periodically taken of the stores cache until the ticker
+* is stopped.
+* StartSnapshotter is generic in nature and will runthe appropriate
+* snapshotter for the stores underlying cache policy implementation
+*
+*/
+func StartSnapshotter(cache *cache.Cache, conf *config.Configuration, scheduler *SnapshotScheduler) {
 	ticker := time.NewTicker(scheduler.Interval)
 
 	for {
 		select {
 		case <-ticker.C:
-			go CreateSnapshot(cache, cache.Config.EnableEncryption, cache.Config.Passphrase)
+			go CreateSnapshot(cache, conf)
 		case <-scheduler.stop:
 			ticker.Stop()
 			return

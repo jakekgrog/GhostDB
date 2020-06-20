@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ghostdb/ghostdb-cache-node/config"
+	"github.com/ghostdb/ghostdb-cache-node/store/request"
 )
 
 func BenchmarkPutToCacheParallel(b *testing.B) {
@@ -21,7 +22,7 @@ func BenchmarkPutToCache(b *testing.B) {
 	cache.Size = int32(b.N)
 	
 	for i := 0; i < b.N; i++ {
-		cache.Put(fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i), -1)
+		cache.Put(request.NewRequestFromValues(fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i), -1))
 	}
 }
 
@@ -35,7 +36,7 @@ func BenchmarkAddToCache(b *testing.B) {
 	cache := NewLRU(config)
 	cache.Size = int32(b.N)
 	for i := 0; i < b.N; i++ {
-		cache.Add(fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i), -1)
+		cache.Add(request.NewRequestFromValues(fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i), -1))
 	}
 }
 
@@ -51,13 +52,13 @@ func BenchmarkGetFromCache(b *testing.B) {
 	cache.Size = int32(b.N)
 	
 	for i := 0; i < b.N; i++ {
-		cache.Put(fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i), -1)
+		cache.Put(request.NewRequestFromValues(fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i), -1))
 	}
 
 	b.StartTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		cache.Get(fmt.Sprintf("key-%d", i))
+		cache.Get(request.NewRequestFromValues(fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i), -1))
 	}
 }
 
@@ -73,13 +74,13 @@ func BenchmarkDeleteFromCache(b *testing.B) {
 	cache.Size = int32(b.N)
 
 	for i := 0; i < b.N; i++ {
-		cache.Put(fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i), -1)
+		cache.Put(request.NewRequestFromValues(fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i), -1))
 	}
 
 	b.StartTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		cache.Delete(fmt.Sprintf("key-%d", i))
+		cache.Delete(request.NewRequestFromValues(fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i), -1))
 	}
 }
 
@@ -91,13 +92,13 @@ func BenchmarkFlushCache(b *testing.B) {
 	cache.Size = int32(b.N)
 
 	for i := 0; i < b.N; i++ {
-		cache.Put(fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i), -1)
+		cache.Put(request.NewRequestFromValues(fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i), -1))
 	}
 
 	b.StartTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		cache.Flush()
+		cache.Flush(request.NewRequestFromValues("Key1", "", -1))
 	}
 }
 
@@ -114,7 +115,8 @@ func writeToCachePutParallel(b *testing.B) {
 		
 		b.ReportAllocs()
 		for pb.Next() {
-			cache.Put(fmt.Sprintf("key-%d-%d", id, counter), fmt.Sprintf("value-%d-%d", counter, id), -1)
+			
+			cache.Put(request.NewRequestFromValues(fmt.Sprintf("key-%d-%d", id, counter), fmt.Sprintf("value-%d-%d", counter, id), -1))
 			counter = counter + 1
 		}
 	})
@@ -133,7 +135,7 @@ func writeToCacheAddParallel(b *testing.B) {
 		
 		b.ReportAllocs()
 		for pb.Next() {
-			cache.Add(fmt.Sprintf("key-%d-%d", id, counter), fmt.Sprintf("value-%d-%d", counter, id), -1)
+			cache.Add(request.NewRequestFromValues(fmt.Sprintf("key-%d-%d", id, counter), fmt.Sprintf("value-%d-%d", counter, id), -1))
 			counter = counter + 1
 		}
 	})
@@ -147,7 +149,7 @@ func getFromCacheParallel(b *testing.B) {
 	cache.Size = int32(b.N)
 
 	for i := 0; i < b.N; i++ {
-		cache.Put(fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i), -1)
+		cache.Put(request.NewRequestFromValues(fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i), -1))
 	}
 
 	b.StartTimer()
@@ -159,7 +161,7 @@ func getFromCacheParallel(b *testing.B) {
 		
 		b.ReportAllocs()
 		for pb.Next() {
-			cache.Get(fmt.Sprintf("key-%d", i))
+			cache.Get(request.NewRequestFromValues(fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i), -1))
 			i = i + 1
 		}
 	})
@@ -173,7 +175,7 @@ func deleteFromCacheParallel(b *testing.B) {
 	cache.Size = int32(b.N)
 
 	for i := 0; i < b.N; i++ {
-		cache.Put(fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i), -1)
+		cache.Put(request.NewRequestFromValues(fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i), -1))
 	}
 
 	b.StartTimer()
@@ -185,7 +187,7 @@ func deleteFromCacheParallel(b *testing.B) {
 		
 		b.ReportAllocs()
 		for pb.Next() {
-			cache.Delete(fmt.Sprintf("key-%d", i))
+			cache.Delete(request.NewRequestFromValues(fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i), -1))
 			i = i + 1
 		}
 	})

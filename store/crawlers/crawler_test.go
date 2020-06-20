@@ -1,4 +1,4 @@
-package lru
+package crawlers
 
 import (
 	"testing"
@@ -6,17 +6,19 @@ import (
 
 	"github.com/ghostdb/ghostdb-cache-node/config"
 	"github.com/ghostdb/ghostdb-cache-node/utils"
+	"github.com/ghostdb/ghostdb-cache-node/store/request"
+	"github.com/ghostdb/ghostdb-cache-node/store/lru"
 )
 
 func TestCrawler(t *testing.T) {
-	var cache *LRUCache
+	var cache *lru.LRUCache
 
 	var config config.Configuration = config.InitializeConfiguration()
-	cache = NewLRU(config)
+	cache = lru.NewLRU(config)
 
-	cache.Put("England", "London", 5)
-	cache.Put("Italy", "Rome", -1)
-	cache.Put("Ireland", "Dublin", 11)
+	cache.Put(request.NewRequestFromValues("England", "London", 5))
+	cache.Put(request.NewRequestFromValues("Italy", "Rome", -1))
+	cache.Put(request.NewRequestFromValues("Ireland", "Dublin", 11))
 	time.Sleep(10 * time.Second)
 	go StartCrawl(cache)
 	time.Sleep(2 * time.Second)

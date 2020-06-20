@@ -1,4 +1,4 @@
-package lru
+package system_monitor
 
 import (
 	"bufio"

@@ -4,9 +4,10 @@ import (
 	"log"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/ghostdb/ghostdb-cache-node/config"
+	"github.com/ghostdb/ghostdb-cache-node/store/request"
+	"github.com/ghostdb/ghostdb-cache-node/store/response"
 )
 
 const (
@@ -18,34 +19,6 @@ const (
 	FLUSHED    = "FLUSH"
 	ERR_FLUSH  = "ERR_FLUSH"
 )
-
-// Cache is an interface for the cache object
-type Cache interface {
-	// Put will add a key/value pair to the cache, possibly
-	// overwriting an existing key/value pair. Put will evict
-	// a key/value pair if the cache is full.
-	Put(k string, v string, ttl int64) string
-
-	// Get will fetch a key/value pair from the cache
-	Get(k string) string
-
-	// Add will add a key/value pair to the cache if the key
-	// does not exist already. It will not evict a key/value pair
-	// from the cache. If the cache is full, the key/value pair does
-	// not get added.
-	Add(k string, v string, ttl int64) string
-
-	// Delete removes a key/value pair from the cache
-	// Returns NOT_FOUND if the key does not exist.
-	Delete(k string) string
-
-	// Flush removes all key/value pairs from the cache even if they
-	// have not expired
-	Flush() string
-
-	// CountKeys return the number of keys in the cache
-	CountKeys() int32
-}
 
 // LRUCache represents a cache object
 type LRUCache struct {
@@ -70,9 +43,6 @@ type LRUCache struct {
 	// This is instantiated at startup and persists for the lifetime
 	// of the node.
 	Config    config.Configuration
-
-	// Watchdog is the application metrics logging subsystem
-	WatchDog  *WatchDog
 	
 	// Mux is a mutex lock
 	Mux       sync.Mutex
@@ -80,7 +50,6 @@ type LRUCache struct {
 
 // NewLRU will initialize the cache
 func NewLRU(config config.Configuration) *LRUCache {
-	wdMetricInterval := time.Duration(config.WatchdogMetricInterval)
 	return &LRUCache{
 		Size:      config.KeyspaceSize,
 		Count:     int32(0),
@@ -88,7 +57,6 @@ func NewLRU(config config.Configuration) *LRUCache {
 		DLL:       InitList(),
 		Hashtable: newHashtable(),
 		Config:    config,
-		WatchDog:  Boot(wdMetricInterval, config.EntryTimestamp),
 	}
 }
 
@@ -97,21 +65,18 @@ func newHashtable() map[string]*Node {
 }
 
 // Get will fetch a key/value pair from the cache
-func (cache *LRUCache) Get(key string) string {
-
-	cache.Mux.Lock()
-	GetHit(cache.WatchDog)
-	cache.Mux.Unlock()
+func (cache *LRUCache) Get(args request.CacheRequest) response.CacheResponse {
+	// Fix in the FUTURE
+	// to use a method that validates the 
+	// request object for this method.
+	key := args.Gobj.Key
 
 	cache.Mux.Lock()
 	nodeToGet := cache.Hashtable[key]
 	cache.Mux.Unlock()
 
 	if nodeToGet == nil {
-		cache.Mux.Lock()
-		CacheMiss(cache.WatchDog)
-		cache.Mux.Unlock()
-		return CACHE_MISS
+		return response.NewCacheMissResponse()
 	}
 
 	cache.Mux.Lock()
@@ -126,17 +91,16 @@ func (cache *LRUCache) Get(key string) string {
 	cache.Hashtable[key] = node
 	cache.Mux.Unlock()
 
-	return node.Value
+	return response.NewResponseFromValue(node.Value)
 }
 
 // Put will add a key/value pair to the cache, possibly
 // overwriting an existing key/value pair. Put will evict
 // a key/value pair if the cache is full.
-func (cache *LRUCache) Put(key string, value string, ttl int64) string {
-
-	cache.Mux.Lock()
-	PutHit(cache.WatchDog)
-	cache.Mux.Unlock()
+func (cache *LRUCache) Put(args request.CacheRequest) response.CacheResponse {
+	key := args.Gobj.Key
+	value := args.Gobj.Value
+	ttl := args.Gobj.TTL
 
 	if !cache.Full {
 		inCache := keyInCache(cache, key)
@@ -164,7 +128,7 @@ func (cache *LRUCache) Put(key string, value string, ttl int64) string {
 	
 			// Update the value
 			node.Value = value
-			return STORED
+			return response.NewResponseFromMessage(STORED, 1)
 		} else {
 			n, _ := RemoveLast(cache.DLL)
 
@@ -174,11 +138,7 @@ func (cache *LRUCache) Put(key string, value string, ttl int64) string {
 			insertIntoHashtable(cache, key, newNode)
 		}
 	}
-
-	if cache.Config.PersistenceAOF {
-		WriteBuffer("put", key, value, ttl)
-	}
-	return STORED
+	return response.NewResponseFromMessage(STORED, 1)
 }
 
 func deleteFromHashtable(cache *LRUCache, key string) {
@@ -191,20 +151,16 @@ func deleteFromHashtable(cache *LRUCache, key string) {
 // does not exist already. It will not evict a key/value pair
 // from the cache. If the cache is full, the key/value pair does
 // not get added.
-func (cache *LRUCache) Add(key string, value string, ttl int64) string {
-
-	cache.Mux.Lock()
-	AddHit(cache.WatchDog)
-	cache.Mux.Unlock()
+func (cache *LRUCache) Add(args request.CacheRequest) response.CacheResponse {
+	key := args.Gobj.Key
+	value := args.Gobj.Value
+	ttl := args.Gobj.TTL
 
 	cache.Mux.Lock()
 	_, ok := cache.Hashtable[key]
 	cache.Mux.Unlock()
 	if ok {
-		cache.Mux.Lock()
-		NotStored(cache.WatchDog)
-		cache.Mux.Unlock()
-		return NOT_STORED
+		return response.NewResponseFromMessage(NOT_STORED, 0)
 	}
 	if !cache.Full {
 		inCache := keyInCache(cache, key)
@@ -227,22 +183,14 @@ func (cache *LRUCache) Add(key string, value string, ttl int64) string {
 		newNode, _ := Insert(cache.DLL, key, value, ttl)
 		insertIntoHashtable(cache, key, newNode)
 	}
-	if cache.Config.PersistenceAOF {
-		WriteBuffer("add", key, value, ttl)
-	}
-	cache.Mux.Lock()
-	Stored(cache.WatchDog)
-	cache.Mux.Unlock()
-	return STORED
+	return response.NewResponseFromMessage(STORED, 1)
 }
 
 // Delete removes a key/value pair from the cache
 // Returns NOT_FOUND if the key does not exist.
-func (cache *LRUCache) Delete(key string) string {
+func (cache *LRUCache) Delete(args request.CacheRequest) response.CacheResponse {
 
-	cache.Mux.Lock()
-	DeleteHit(cache.WatchDog)
-	cache.Mux.Unlock()
+	key := args.Gobj.Key
 
 	cache.Mux.Lock()
 	_, ok := cache.Hashtable[key]
@@ -253,10 +201,7 @@ func (cache *LRUCache) Delete(key string) string {
 		cache.Mux.Unlock()
 
 		if nodeToRemove == nil {
-			cache.Mux.Lock()
-			NotFound(cache.WatchDog)
-			cache.Mux.Unlock()
-			return NOT_FOUND
+			return response.NewResponseFromMessage(NOT_FOUND, 0)
 		}
 
 		deleteFromHashtable(cache, nodeToRemove.Key)
@@ -271,27 +216,13 @@ func (cache *LRUCache) Delete(key string) string {
 		cache.Mux.Unlock()
 
 		cache.Full = false
-		if cache.Config.PersistenceAOF {
-			WriteBuffer("delete", key, "NA", -1)
-		}
-		cache.Mux.Lock()
-		Removed(cache.WatchDog)
-		cache.Mux.Unlock()
-		return REMOVED
+		return response.NewResponseFromMessage(REMOVED, 1)
 	}
-	cache.Mux.Lock()
-	NotFound(cache.WatchDog)
-	cache.Mux.Unlock()
-	return NOT_FOUND
+	return response.NewResponseFromMessage(NOT_FOUND, 0)
 }
 
 // Flush removes all key/value pairs from the cache even if they have not expired
-func (cache *LRUCache) Flush() string {
-
-	cache.Mux.Lock()
-	FlushHit(cache.WatchDog)
-	cache.Mux.Unlock()
-
+func (cache *LRUCache) Flush(args request.CacheRequest) response.CacheResponse {
 	for k := range cache.Hashtable {
 		n, _ := RemoveLast(cache.DLL)
 		if n == nil {
@@ -304,23 +235,52 @@ func (cache *LRUCache) Flush() string {
 	}
 	
 	if cache.Count == int32(0) {
-		if cache.Config.PersistenceAOF {
-			WriteBuffer("flush", "NA", "NA", -1)
-		}
-		cache.Mux.Lock()
-		Flushed(cache.WatchDog)
-		cache.Mux.Unlock()
-		return FLUSHED
+		return response.NewResponseFromMessage(FLUSHED, 1)
 	}
-	cache.Mux.Lock()
-	ErrFlush(cache.WatchDog)
-	cache.Mux.Unlock()
-	return ERR_FLUSH
+	return response.NewResponseFromMessage(ERR_FLUSH, 0)
 }
 
 // CountKeys return the number of keys in the cache
-func (cache *LRUCache) CountKeys() int32 {
-	return cache.Count
+func (cache *LRUCache) CountKeys(args request.CacheRequest) response.CacheResponse {
+	return response.NewResponseFromValue(cache.Count)
+}
+
+// DeleteByKey functions the same as Delete, however it is used in various locations
+// to reduce the cost of allocating request objects for internal deletion mechanisms 
+// e.g. the cache crawlers.
+func (cache *LRUCache) DeleteByKey(key string) response.CacheResponse {
+	cache.Mux.Lock()
+	_, ok := cache.Hashtable[key]
+	cache.Mux.Unlock()
+	if ok {
+		cache.Mux.Lock()
+		nodeToRemove := cache.Hashtable[key]
+		cache.Mux.Unlock()
+
+		if nodeToRemove == nil {
+			return response.NewResponseFromMessage(NOT_FOUND, 0)
+		}
+
+		deleteFromHashtable(cache, nodeToRemove.Key)
+		_, err := RemoveNode(cache.DLL, nodeToRemove)
+
+		if err != nil {
+			log.Println("failed to remove key-value pair")
+		}
+
+		cache.Mux.Lock()
+		atomic.AddInt32(&cache.Count, -1)
+		cache.Mux.Unlock()
+
+		cache.Full = false
+
+		return response.NewResponseFromMessage(REMOVED, 1)
+	}
+	return response.NewResponseFromMessage(NOT_FOUND, 0)
+}
+
+func (cache *LRUCache) GetHashtableReference() *map[string]*Node {
+	return &cache.Hashtable
 }
 
 func insertIntoHashtable(cache *LRUCache, key string, node *Node) {

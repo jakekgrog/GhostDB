@@ -1,4 +1,4 @@
-package lru
+package persistence
 
 import (
 	"compress/gzip"
@@ -10,50 +10,141 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
+	// "time"
+
+	"github.com/ghostdb/ghostdb-cache-node/store/lru"
+	"github.com/ghostdb/ghostdb-cache-node/store/cache"
+	"github.com/ghostdb/ghostdb-cache-node/config"
 )
 
 const (
-	SnitchLogFilename = "/ghostdb/snapshot.gz"
+	SNAPSHOT_FILENAME = "snapshot.gz"
 )
 
-// CreateSnapshot creates a JSON serialized snapshot of the cache
-// and compresses it
-func CreateSnapshot(cache *LRUCache, encryption bool, passphrase ...string) {
+func CreateSnapshot(cache *cache.Cache, config *config.Configuration) (bool, error) {
+	switch (*cache).(type) {
+	case *lru.LRUCache:
+		return createLruSnapshot((*cache).(*lru.LRUCache), config.EnableEncryption, config.Passphrase)
+	default:
+		return false, nil
+	}
+}
+
+func createLruSnapshot(cache *lru.LRUCache, encryption bool, passphrase ...string) (bool, error) {
 	serialized, _ := json.MarshalIndent(cache, "", " ")
 
 	configPath, _ := os.UserConfigDir()
-	if _, err := os.Stat(configPath + SnitchLogFilename); err == nil {
-		os.Remove(configPath + SnitchLogFilename)
+	snapshotPath := configPath + SNAPSHOT_FILENAME
+
+	if _, err := os.Stat(snapshotPath); err == nil {
+		os.Remove(snapshotPath)
 	}
 
-	f, err := os.OpenFile(configPath+SnitchLogFilename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(snapshotPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		f, err = os.Create(configPath + SnitchLogFilename)
+		f, err = os.Create(snapshotPath)
 	}
 
 	w, err := gzip.NewWriterLevel(f, gzip.BestCompression)
 	if err != nil {
-		log.Fatalf("failed to create new snapshot writer: %s", err.Error())
+		log.Printf("failed to create new snapshot writer: %s", err.Error())
+		return false, err
 	}
 
 	if encryption {
 		encryptedData, err := EncryptData(serialized, passphrase[0])
 		if err != nil {
 			w.Close()
-			log.Fatalf("failed to encrypt snapshot: %s", err.Error())
+			log.Printf("failed to encrypt snapshot: %s", err.Error())
+			return false, err
 		}
 		w.Write(encryptedData)
 	} else {
 		w.Write(serialized)
 	}
 	w.Close()
+	log.Println("successfully created snapshot")
+	return true, nil
 }
 
 // GetSnapshotFilename builds the filename for the snapshot being taken
 func GetSnapshotFilename() string {
-	return "snapshot.gz"
+	return SNAPSHOT_FILENAME
+}
+
+
+// BuildCache rebuilds the cache from the byte stream of the snapshot
+func BuildCacheFromSnapshot(bs *[]byte) (lru.LRUCache, error) {
+	// Create a new cache instance.
+	var cache lru.LRUCache
+
+	// Create a new configuration object
+	var config config.Configuration = config.InitializeConfiguration()
+	
+	// Unmarshal the byte stream and update the new cache object with the result.
+	err := json.Unmarshal(*bs, &cache)
+	
+	if err != nil {
+		log.Fatalf("failed to rebuild cache from snapshot: %s", err.Error())
+	}
+
+	cache.Config = config
+
+	// Create a new doubly linked list object
+	ll := lru.InitList()
+
+	// Populate the caches hashtable and doubly linked list with the values 
+	// from the unmarshalled byte stream
+	for _, v := range cache.Hashtable {
+		n, err := lru.Insert(ll, v.Key, v.Value, v.TTL)
+		if err != nil {
+			return lru.LRUCache{}, err
+		}
+		cache.Hashtable[v.Key] = n
+	}
+
+	// Reset the watchdog
+	// wdMetricInterval := time.Duration(config.WatchdogMetricInterval)
+	// TODO: Add proper handling for this.
+	// cache.Watchdog = monitor.Boot(wdMetricInterval, config.EntryTimestamp)
+
+	cache.DLL = ll
+
+	return cache, nil
+}
+
+// ReadSnapshot reads the compressed snapshot file into
+// buffer and returns a reference to the buffer
+func ReadSnapshot(encryption bool, passphrase ...string) *[]byte {
+
+	configPath, _ := os.UserConfigDir()
+	snap, err := os.Open(configPath + SNAPSHOT_FILENAME)
+	if err != nil {
+		log.Fatalf("failed to open snapshot: %s", err.Error())
+	}
+
+	defer snap.Close()
+
+	file, err := gzip.NewReader(snap)
+
+	if err != nil {
+		log.Fatalf("failed to create gzip reader: %s", err.Error())
+	}
+
+	byteStream, _ := ioutil.ReadAll(file)
+
+	if encryption {
+		serializedData, err := DecryptData(byteStream, passphrase[0])
+		if err != nil {
+			log.Fatalf("failed to decrypt snapshot: %s", err.Error())
+		}
+		return &serializedData
+	} else {
+		return &byteStream
+	}
 }
 
 // EncryptData is our encryption client to encrypt the serialized

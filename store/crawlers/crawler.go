@@ -1,11 +1,13 @@
-package lru
+package crawlers
 
 import (
 	"time"
+
+	"github.com/ghostdb/ghostdb-cache-node/store/lru"
 )
 
 // StartCrawl crawls the cache and evicts stale data
-func StartCrawl(cache *LRUCache) {
+func StartCrawl(cache *lru.LRUCache) {
 	markedKeys := mark(cache)
 	sweep(cache, markedKeys)
 	return
@@ -13,10 +15,10 @@ func StartCrawl(cache *LRUCache) {
 
 // Traverse the cache and mark key-value pair nodes
 // for removal.
-func mark(cache *LRUCache) []string {
+func mark(cache *lru.LRUCache) []string {
 	markedKeys := []string{}
 
-	node, _ := GetLastNode(cache.DLL)
+	node, _ := lru.GetLastNode(cache.DLL)
 
 	// List is empty
 	if node == nil {
@@ -42,9 +44,9 @@ func mark(cache *LRUCache) []string {
 }
 
 // Sweep the cache removing the marked nodes
-func sweep(cache *LRUCache, keys []string) {
+func sweep(cache *lru.LRUCache, keys []string) {
 	for _, key := range keys {
-		cache.Delete(key)
+		cache.DeleteByKey(key)
 	}
 	return
 }
