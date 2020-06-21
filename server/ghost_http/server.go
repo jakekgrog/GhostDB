@@ -7,7 +7,6 @@ import (
 	"github.com/valyala/fasthttp"
 	"github.com/ghostdb/ghostdb-cache-node/store/base"
 	"github.com/ghostdb/ghostdb-cache-node/store/request"
-	//"github.com/ghostdb/ghostdb-cache-node/store/response"
 )
 
 var (

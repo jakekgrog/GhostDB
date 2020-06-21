@@ -2,29 +2,27 @@ package base
 
 import (
 	"testing"
-	// "time"
+	"time"
 
-	// "github.com/ghostdb/ghostdb-cache-node/utils"
-	// "github.com/ghostdb/ghostdb-cache-node/config"
-	// "github.com/ghostdb/ghostdb-cache-node/store/request"
+	"github.com/ghostdb/ghostdb-cache-node/utils"
+	"github.com/ghostdb/ghostdb-cache-node/config"
+	"github.com/ghostdb/ghostdb-cache-node/store/request"
 )
 
 func TestSnapshotScheduler(t *testing.T) {
-	// var config config.Configuration = config.InitializeConfiguration()
+	var config config.Configuration = config.InitializeConfiguration()
+	config.SnapshotInterval = int32(5)
+	var store *Store
+	store = NewStore("LRU")
+	store.BuildStore(config)
+	store.RunStore()
 
-	// var cache *LRUCache
-	// cache = NewLRU(config)
+	store.Execute("put", request.NewRequestFromValues("England", "London", 2))
+	store.Execute("put", request.NewRequestFromValues("Italy", "Rome", -1))
 
-	// sch := NewSnapshotScheduler(int32(5))
+	utils.AssertEqual(t, store.Execute("nodeSize", request.NewEmptyRequest()).Gobj.Value, int32(2), "")
 
-	// utils.AssertEqual(t, sch.Interval, time.Duration(int32(5)) * time.Second, "")
+	time.Sleep(6 * time.Second)
 
-	// go StartSnapshotter(cache, sch)
-
-	// cache.Put(request.NewRequestFromValues("England", "London", 2))
-	// cache.Put(request.NewRequestFromValues("Italy", "Rome", -1))
-
-	// time.Sleep(6 * time.Second)
-
-	// StopSnapshotter(sch)
+	store.StopStore()
 }

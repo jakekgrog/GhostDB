@@ -140,11 +140,20 @@ func (store *Store) RunStore() {
 	go crawlers.StartCrawlers(&store.Cache, store.crawlerScheduler)
 	if store.Conf.SnapshotEnabled {
 		go persistence.StartSnapshotter(&store.Cache, &store.Conf, store.snapshotScheduler)
+	} else if store.Conf.PersistenceAOF {
+		if ok, _ := persistence.AofExists(); ok {
+			go persistence.RebootAof(&store.Cache, store.Conf.AofMaxBytes)
+		} else {
+			go persistence.BootAOF(&store.Cache, store.Conf.AofMaxBytes)
+		}
 	}
 }
 
 func (store *Store) StopStore() {
 	go crawlers.StopScheduler(store.crawlerScheduler)
+	if store.Conf.SnapshotEnabled {
+		go persistence.StopSnapshotter(store.snapshotScheduler)
+	}
 }
 
 func (store *Store) newCacheFromPolicy(policy string) cache.Cache {

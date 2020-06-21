@@ -84,7 +84,7 @@ func CreateAOF(logPath string) {
 func flushBuffer(cache *cache.Cache, maxAOFSize int64) {
 	for {
 		time.Sleep(writeInterval * time.Second)
-		if getAOFSize() > maxAOFSize {
+		if GetAOFSize() > maxAOFSize {
 			go appendBufferContent(true)
 			go reduceAOF(cache)
 		}
@@ -126,7 +126,7 @@ func reduceAOF(cache *cache.Cache) {
 	os.Rename(configPath+tempLog, configPath+logFile)
 }
 
-func getAOFSize() int64 {
+func GetAOFSize() int64 {
 	file, err := os.Stat(configPath + logFile)
 	if err != nil {
 		log.Fatalf("failed to retrieve AOF log file information: %s", err.Error())

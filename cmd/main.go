@@ -9,7 +9,6 @@ import (
 
 	"github.com/ghostdb/ghostdb-cache-node/server/ghost_http"
 	"github.com/ghostdb/ghostdb-cache-node/store/base"
-	"github.com/ghostdb/ghostdb-cache-node/store/lru"
 	"github.com/ghostdb/ghostdb-cache-node/store/persistence"
 	"github.com/ghostdb/ghostdb-cache-node/store/monitor"
 	"github.com/ghostdb/ghostdb-cache-node/config"
@@ -35,6 +34,9 @@ func init() {
 	log.Println("LOG PATH: "+configPath)
 
 	err := os.Mkdir(configPath+"/ghostdb", 0777)
+	if err != nil {
+		log.Fatalf("Failed to create GhostDB configuration directory")
+	}
 
 	// Create snitch and watchdog logfiles if they do not exist
 	snitchFile, err := os.OpenFile(configPath + system_monitor.SnitchLogFileName, os.O_WRONLY | os.O_CREATE | os.O_APPEND, 0777)
@@ -58,7 +60,7 @@ func init() {
 	// Build the cache from a snapshot if snaps enabled.
 	// If the snapshot does not exist, then build a new cache.
 	if conf.SnapshotEnabled {
-		if _, err := os.Stat(configPath + lru.SnitchLogFilename); err == nil {
+		if _, err := os.Stat(configPath + system_monitor.SnitchLogFileName); err == nil {
 			bytes := persistence.ReadSnapshot(conf.EnableEncryption, conf.Passphrase)
 			store.BuildStoreFromSnapshot(bytes)
 			log.Println("successfully booted from snapshot...")
