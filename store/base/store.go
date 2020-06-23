@@ -2,6 +2,7 @@ package base
 
 import (
 	"log"
+	"time"
 	
 	"github.com/ghostdb/ghostdb-cache-node/store/cache"
 	"github.com/ghostdb/ghostdb-cache-node/store/lru"
@@ -77,6 +78,7 @@ func (store *Store) Execute(cmd string, args request.CacheRequest) response.Cach
 		writeAof(cmd, &args)
 	}
 	// CHECK RESPONSE AND SEND TO WATCHDOG
+	monitor.WriteMetrics(store.watchdog, cmd, execResult)
 	return execResult
 }
 
@@ -112,6 +114,7 @@ func (store *Store) BuildStore(conf config.Configuration) {
 	store.commands = store.registerHandlers()
 	store.crawlerScheduler = crawlers.NewCrawlerScheduler(conf.CrawlerInterval)
 	store.snapshotScheduler = persistence.NewSnapshotScheduler(conf.SnapshotInterval)
+	store.watchdog = monitor.NewWatchdog(time.Duration(conf.WatchdogMetricInterval), true)
 }
 
 func (baseStore *Store) registerHandlers() map[string]interface{} {

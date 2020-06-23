@@ -109,7 +109,7 @@ type ReadWatchDog struct {
 }
 
 // Boot instantiates a watchdog log struct and its corresponding log file
-func Boot(writeInterval time.Duration, entryTimestamp bool) *WatchDog {
+func NewWatchdog(writeInterval time.Duration, entryTimestamp bool) *WatchDog {
 	var watchDog WatchDog
 
 	watchDog.WriteInterval = writeInterval
@@ -124,9 +124,9 @@ func Boot(writeInterval time.Duration, entryTimestamp bool) *WatchDog {
 		fmt.Println(err) // Allows the CI runner to test successfully (Update when test_config is working)
 	}
 	// _, err := os.OpenFile(configPath+WatchDogLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-
+	
 	go Dump(&watchDog)
-
+	
 	return &watchDog
 }
 
@@ -269,9 +269,10 @@ func DeleteHit(appMetrics *WatchDog) {
 // it also increments a total value
 func PutHit(appMetrics *WatchDog) {
 	appMetrics.Mux.Lock()
+	defer appMetrics.Mux.Unlock()
 	atomic.AddUint64(&appMetrics.PutRequests, 1)
 	atomic.AddUint64(&appMetrics.TotalRequests, 1)
-	defer appMetrics.Mux.Unlock()
+	
 }
 
 // Dump writes the contents of the watchdog struct to the watchdog log file

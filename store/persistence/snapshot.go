@@ -81,17 +81,12 @@ func BuildCacheFromSnapshot(bs *[]byte) (lru.LRUCache, error) {
 	// Create a new cache instance.
 	var cache lru.LRUCache
 
-	// Create a new configuration object
-	var config config.Configuration = config.InitializeConfiguration()
-	
 	// Unmarshal the byte stream and update the new cache object with the result.
 	err := json.Unmarshal(*bs, &cache)
 	
 	if err != nil {
 		log.Fatalf("failed to rebuild cache from snapshot: %s", err.Error())
 	}
-
-	cache.Config = config
 
 	// Create a new doubly linked list object
 	ll := lru.InitList()
