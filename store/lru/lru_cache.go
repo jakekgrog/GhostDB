@@ -38,11 +38,6 @@ type LRUCache struct {
 
 	// Hashtable maps to nodes in the doubly linked list
 	Hashtable map[string]*Node
-
-	// Config is the user configuration for the cache node.
-	// This is instantiated at startup and persists for the lifetime
-	// of the node.
-	Config    config.Configuration
 	
 	// Mux is a mutex lock
 	Mux       sync.Mutex
@@ -56,7 +51,6 @@ func NewLRU(config config.Configuration) *LRUCache {
 		Full:      false,
 		DLL:       InitList(),
 		Hashtable: newHashtable(),
-		Config:    config,
 	}
 }
 

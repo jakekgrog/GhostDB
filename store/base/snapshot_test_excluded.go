@@ -39,13 +39,13 @@ func TestSerializer(t *testing.T) {
 	utils.AssertEqual(t, store.Execute("nodeSize", request.NewEmptyRequest()), int32(2), "")
 
 	// Test the config was rebuilt correctly.
-	utils.AssertEqual(t, c.Config.KeyspaceSize, int32(65536), "")
-	utils.AssertEqual(t, c.Config.SnitchMetricInterval, int32(300), "")
-	utils.AssertEqual(t, c.Config.WatchdogMetricInterval, int32(300), "")
-	utils.AssertEqual(t, c.Config.DefaultTTL, int32(-1), "")
-	utils.AssertEqual(t, c.Config.CrawlerInterval, int32(300), "")
-	utils.AssertEqual(t, c.Config.SnapshotInterval, int32(3600), "")
-	utils.AssertEqual(t, c.Config.PersistenceAOF, false, "")
-	utils.AssertEqual(t, c.Config.EntryTimestamp, true, "")
-	utils.AssertEqual(t, c.Config.EnableEncryption, true, "")
+	utils.AssertEqual(t, store.Conf.KeyspaceSize, int32(65536), "")
+	utils.AssertEqual(t, store.Conf.SnitchMetricInterval, int32(300), "")
+	utils.AssertEqual(t, store.Conf.WatchdogMetricInterval, int32(300), "")
+	utils.AssertEqual(t, store.Conf.DefaultTTL, int32(-1), "")
+	utils.AssertEqual(t, store.Conf.CrawlerInterval, int32(300), "")
+	utils.AssertEqual(t, store.Conf.SnapshotInterval, int32(3600), "")
+	utils.AssertEqual(t, store.Conf.PersistenceAOF, false, "")
+	utils.AssertEqual(t, store.Conf.EntryTimestamp, true, "")
+	utils.AssertEqual(t, store.Conf.EnableEncryption, true, "")
 }
