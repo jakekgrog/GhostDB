@@ -5,7 +5,7 @@ import (
 )
 
 type CacheRequest struct {
-	Gobj object.CacheObject
+	Gobj object.CacheObject `json:"Gobj"`
 }
 
 func NewRequestFromValues(key string, value interface{}, ttl int64) CacheRequest {

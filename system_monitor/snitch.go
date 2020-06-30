@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ghostdb/ghostdb-cache-node/utils"
+	"github.com/ghostdb/ghostdb-cache-node/store/response"
 )
 
 const (
@@ -225,7 +226,7 @@ func StartSnitchMonitor() {
 // GetSnitchMetrics reads the snitch log file and
 // returns the entries in the log file as a Snitch
 // object array.
-func GetSnitchMetrics() []Snitch {
+func GetSnitchMetrics() response.CacheResponse {
 	usr, _ := user.Current()
 	configPath := usr.HomeDir
 
@@ -243,5 +244,7 @@ func GetSnitchMetrics() []Snitch {
 		json.Unmarshal([]byte(line), &entry)
 		data = append(data, entry)
 	}
-	return data
+	
+	res := response.NewResponseFromValue(data)
+	return res
 }

@@ -2,11 +2,14 @@ package ghost_http
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	
 	"github.com/valyala/fasthttp"
 	"github.com/ghostdb/ghostdb-cache-node/store/base"
 	"github.com/ghostdb/ghostdb-cache-node/store/request"
+	"github.com/ghostdb/ghostdb-cache-node/store/response"
+	"github.com/ghostdb/ghostdb-cache-node/system_monitor"
 )
 
 var (
@@ -31,12 +34,13 @@ func NodeConfig(s *base.Store) {
 // Router passes control to handlers
 func Router() {
 	routes := func(ctx *fasthttp.RequestCtx) {
-		var req request.CacheRequest
+		var req = new(request.CacheRequest)
 		var path = ctx.Path()
 		var cmd = string(path[1:])
 		var body = ctx.PostBody()
 
 		if err := json.Unmarshal(body, &req); err != nil {
+			log.Println(err)
 			ctx.Request.Header.Set("Content-Type", "application/json; charset=UTF-8")
 			ctx.SetStatusCode(422)
 			if err := json.NewEncoder(ctx).Encode(err); err != nil {
@@ -44,7 +48,13 @@ func Router() {
 			}
 		}
 
-		var res = store.Execute(cmd, req)
+		var res response.CacheResponse
+		// Handle SysMet
+		if cmd == "getSnitchMetrics" {
+			res = system_monitor.GetSnitchMetrics()
+		} else {
+			res = store.Execute(cmd, *req)
+		}
 		
 		ctx.Response.Header.Set("Content-Type", "application/json; charset=UTF-8")
 		ctx.SetStatusCode(http.StatusOK)

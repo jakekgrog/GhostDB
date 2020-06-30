@@ -70,6 +70,12 @@ func NewStore(policy string) *Store {
 }
 
 func (store *Store) Execute(cmd string, args request.CacheRequest) response.CacheResponse {
+	// Handle App metrics
+	if cmd == "getWatchdogMetrics" {
+		return monitor.GetWatchdogMetrics()
+	}
+
+	// Handle all other commands
 	if _, ok := store.commands[cmd]; !ok {
 		return response.BadCommandResponse(cmd)
 	}
@@ -114,7 +120,7 @@ func (store *Store) BuildStore(conf config.Configuration) {
 	store.commands = store.registerHandlers()
 	store.crawlerScheduler = crawlers.NewCrawlerScheduler(conf.CrawlerInterval)
 	store.snapshotScheduler = persistence.NewSnapshotScheduler(conf.SnapshotInterval)
-	store.watchdog = monitor.NewWatchdog(time.Duration(conf.WatchdogMetricInterval), true)
+	store.watchdog = monitor.NewWatchdog(time.Duration(store.Conf.WatchdogMetricInterval), true)
 }
 
 func (baseStore *Store) registerHandlers() map[string]interface{} {

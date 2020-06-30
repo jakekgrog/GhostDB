@@ -20,7 +20,7 @@ import (
 const (
 	WatchDogLogFilePath = "/ghostdb/ghostdb_watchDog.log"
 	WatchDogTempFileName = "/ghostdb/ghostdb_watchDog_tmp.log"
-	MaxWatchDogLogSize = 10
+	MaxWatchDogLogSize = 500000
 )
 
 // WatchDog struct is used to record cache events
@@ -119,10 +119,11 @@ func NewWatchdog(writeInterval time.Duration, entryTimestamp bool) *WatchDog {
 	configPath := usr.HomeDir
 
 	// Create application metrics file
-	_, err := os.Create(configPath + WatchDogLogFilePath)
+	file, err := os.OpenFile(configPath + WatchDogLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
 	if err != nil {
 		fmt.Println(err) // Allows the CI runner to test successfully (Update when test_config is working)
 	}
+	defer file.Close()
 	// _, err := os.OpenFile(configPath+WatchDogLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	
 	go Dump(&watchDog)
@@ -320,14 +321,16 @@ func Dump(appMetrics *WatchDog) {
 
 // GetWatchdogMetrics reads the Watchdog log
 // unmarshals each entry and appends it to a slice
-func GetWatchdogMetrics() []ReadWatchDog {
+func GetWatchdogMetrics() response.CacheResponse {
 	usr, _ := user.Current()
 	configPath := usr.HomeDir
 
-	file, err := os.OpenFile(configPath + WatchDogLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.Open(configPath + WatchDogLogFilePath)
 	if err != nil {
 		log.Fatalf("failed to open watchdog log file: %s", err.Error())
 	}
+	defer file.Close()
+
 	var entries []ReadWatchDog
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -336,5 +339,11 @@ func GetWatchdogMetrics() []ReadWatchDog {
 		json.Unmarshal([]byte(line), &entry)
 		entries = append(entries, entry)
 	}
-	return entries
+
+	if err := scanner.Err(); err != nil {
+		log.Println(err)
+	}
+
+	res := response.NewResponseFromValue(entries)
+	return res
 }
