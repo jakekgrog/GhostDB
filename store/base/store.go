@@ -22,7 +22,7 @@ const (
 	STORE_DELETE = "delete"
 	STORE_FLUSH = "flush"
 	STORE_NODE_SIZE = "nodeSize"
-	STORE_WATCHDOG = "getWatchdogMetrics"
+	STORE_APP_METRICS = "getAppMetrics"
 )
 
 // Policy types
@@ -60,7 +60,7 @@ type Store struct {
 	commands map[string]interface{}
 	crawlerScheduler *crawlers.CrawlerScheduler
 	snapshotScheduler *persistence.SnapshotScheduler
-	watchdog *monitor.WatchDog
+	appMetrics *monitor.AppMetrics
 }
 
 func NewStore(policy string) *Store {
@@ -71,8 +71,8 @@ func NewStore(policy string) *Store {
 
 func (store *Store) Execute(cmd string, args request.CacheRequest) response.CacheResponse {
 	// Handle App metrics
-	if cmd == "getWatchdogMetrics" {
-		return monitor.GetWatchdogMetrics()
+	if cmd == "getAppMetrics" {
+		return monitor.GetAppMetrics()
 	}
 
 	// Handle all other commands
@@ -83,8 +83,8 @@ func (store *Store) Execute(cmd string, args request.CacheRequest) response.Cach
 	if store.Conf.PersistenceAOF {
 		writeAof(cmd, &args)
 	}
-	// CHECK RESPONSE AND SEND TO WATCHDOG
-	monitor.WriteMetrics(store.watchdog, cmd, execResult)
+	// CHECK RESPONSE AND SEND TO APP METRICS
+	monitor.WriteMetrics(store.appMetrics, cmd, execResult)
 	return execResult
 }
 
@@ -120,7 +120,7 @@ func (store *Store) BuildStore(conf config.Configuration) {
 	store.commands = store.registerHandlers()
 	store.crawlerScheduler = crawlers.NewCrawlerScheduler(conf.CrawlerInterval)
 	store.snapshotScheduler = persistence.NewSnapshotScheduler(conf.SnapshotInterval)
-	store.watchdog = monitor.NewWatchdog(time.Duration(store.Conf.WatchdogMetricInterval), true)
+	store.appMetrics = monitor.NewAppMetrics(time.Duration(store.Conf.AppMetricInterval), true)
 }
 
 func (baseStore *Store) registerHandlers() map[string]interface{} {

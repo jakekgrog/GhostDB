@@ -8,7 +8,7 @@ const (
 	STORE_DELETE = "delete"
 	STORE_FLUSH = "flush"
 	STORE_NODE_SIZE = "nodeSize"
-	STORE_WATCHDOG = "getWatchdogMetrics"
+	STORE_APP_METRICS = "getAppMetrics"
 
 	// STORE POLICY TYPES
 	LRU_TYPE = "LRU"   // Least recently used

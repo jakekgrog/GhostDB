@@ -16,15 +16,15 @@ import (
 	"github.com/ghostdb/ghostdb-cache-node/store/response"
 )
 
-// WatchDogLogFilePath Log file path
+// AppMetricsLogFilePath Log file path
 const (
-	WatchDogLogFilePath = "/ghostdb/ghostdb_watchDog.log"
-	WatchDogTempFileName = "/ghostdb/ghostdb_watchDog_tmp.log"
-	MaxWatchDogLogSize = 500000
+	AppMetricsLogFilePath = "/ghostdb/ghostdb_appMetrics.log"
+	AppMetricsTempFileName = "/ghostdb/ghostdb_appMetrics_tmp.log"
+	MaxAppMetricsLogSize = 500000
 )
 
-// WatchDog struct is used to record cache events
-type WatchDog struct {
+// AppMetrics struct is used to record cache events
+type AppMetrics struct {
 	// TotalRequests is the cumulative number
 	// of requests to the cache node.
 	TotalRequests  uint64
@@ -89,8 +89,8 @@ type WatchDog struct {
 	EntryTimestamp bool
 }
 
-// ReadWatchDog struct is used to Unmarshal log entries
-type ReadWatchDog struct {
+// ReadAppMetrics struct is used to Unmarshal log entries
+type ReadAppMetrics struct {
 	Timestamp      string `json:"Timestamp"`
 	TotalRequests  uint64 
 	GetRequests    uint64 
@@ -108,30 +108,30 @@ type ReadWatchDog struct {
 	ErrFlush  uint64 
 }
 
-// Boot instantiates a watchdog log struct and its corresponding log file
-func NewWatchdog(writeInterval time.Duration, entryTimestamp bool) *WatchDog {
-	var watchDog WatchDog
+// Boot instantiates a appMetrics log struct and its corresponding log file
+func NewAppMetrics(writeInterval time.Duration, entryTimestamp bool) *AppMetrics {
+	var appMetrics AppMetrics
 
-	watchDog.WriteInterval = writeInterval
-	watchDog.EntryTimestamp = entryTimestamp
+	appMetrics.WriteInterval = writeInterval
+	appMetrics.EntryTimestamp = entryTimestamp
 
 	usr, _ := user.Current()
 	configPath := usr.HomeDir
 
 	// Create application metrics file
-	file, err := os.OpenFile(configPath + WatchDogLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
+	file, err := os.OpenFile(configPath + AppMetricsLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
 	if err != nil {
 		fmt.Println(err) // Allows the CI runner to test successfully (Update when test_config is working)
 	}
 	defer file.Close()
-	// _, err := os.OpenFile(configPath+WatchDogLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	// _, err := os.OpenFile(configPath+AppMetricsLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	
-	go Dump(&watchDog)
+	go Dump(&appMetrics)
 	
-	return &watchDog
+	return &appMetrics
 }
 
-func WriteMetrics(appMetrics *WatchDog, cmd string, resp response.CacheResponse) {
+func WriteMetrics(appMetrics *AppMetrics, cmd string, resp response.CacheResponse) {
 	switch cmd {
 	case constants.STORE_GET:
 		GetHit(appMetrics)
@@ -171,7 +171,7 @@ func WriteMetrics(appMetrics *WatchDog, cmd string, resp response.CacheResponse)
 
 // ErrFlush is a setter that increments
 // its corresponding struct field by one
-func ErrFlush(appMetrics *WatchDog) {
+func ErrFlush(appMetrics *AppMetrics) {
 	appMetrics.Mux.Lock()
 	atomic.AddUint64(&appMetrics.ErrFlush, 1)
 	defer appMetrics.Mux.Unlock()
@@ -179,7 +179,7 @@ func ErrFlush(appMetrics *WatchDog) {
 
 // Flushed is a setter that increments
 // its corresponding struct field by one
-func Flushed(appMetrics *WatchDog) {
+func Flushed(appMetrics *AppMetrics) {
 	appMetrics.Mux.Lock()
 	atomic.AddUint64(&appMetrics.Flushed, 1)
 	defer appMetrics.Mux.Unlock()
@@ -187,7 +187,7 @@ func Flushed(appMetrics *WatchDog) {
 
 // NotFound is a setter that increments
 // its corresponding struct field by one
-func NotFound(appMetrics *WatchDog) {
+func NotFound(appMetrics *AppMetrics) {
 	appMetrics.Mux.Lock()
 	atomic.AddUint64(&appMetrics.NotFound, 1)
 	defer appMetrics.Mux.Unlock()
@@ -195,7 +195,7 @@ func NotFound(appMetrics *WatchDog) {
 
 // Removed is a setter that increments
 // its corresponding struct field by one
-func Removed(appMetrics *WatchDog) {
+func Removed(appMetrics *AppMetrics) {
 	appMetrics.Mux.Lock()
 	atomic.AddUint64(&appMetrics.Removed, 1)
 	defer appMetrics.Mux.Unlock()
@@ -203,7 +203,7 @@ func Removed(appMetrics *WatchDog) {
 
 // NotStored is a setter that increments
 // its corresponding struct field by one
-func NotStored(appMetrics *WatchDog) {
+func NotStored(appMetrics *AppMetrics) {
 	appMetrics.Mux.Lock()
 	atomic.AddUint64(&appMetrics.NotStored, 1)
 	defer appMetrics.Mux.Unlock()
@@ -211,7 +211,7 @@ func NotStored(appMetrics *WatchDog) {
 
 // Stored is a setter that increments
 // its corresponding struct field by one
-func Stored(appMetrics *WatchDog) {
+func Stored(appMetrics *AppMetrics) {
 	appMetrics.Mux.Lock()
 	atomic.AddUint64(&appMetrics.Stored, 1)
 	defer appMetrics.Mux.Unlock()
@@ -219,7 +219,7 @@ func Stored(appMetrics *WatchDog) {
 
 // CacheMiss is a setter that increments
 // its corresponding struct field by one
-func CacheMiss(appMetrics *WatchDog) {
+func CacheMiss(appMetrics *AppMetrics) {
 	appMetrics.Mux.Lock()
 	atomic.AddUint64(&appMetrics.CacheMiss, 1)
 	defer appMetrics.Mux.Unlock()
@@ -228,7 +228,7 @@ func CacheMiss(appMetrics *WatchDog) {
 // GetHit is a setter that increments
 // its corresponding struct field every time a endpoint is hit
 // it also increments a total value
-func GetHit(appMetrics *WatchDog) {
+func GetHit(appMetrics *AppMetrics) {
 	appMetrics.Mux.Lock()
 	atomic.AddUint64(&appMetrics.GetRequests, 1)
 	atomic.AddUint64(&appMetrics.TotalRequests, 1)
@@ -238,7 +238,7 @@ func GetHit(appMetrics *WatchDog) {
 // FlushHit is a setter that increments
 // its corresponding struct field every time a endpoint is hit
 // it also increments a total value
-func FlushHit(appMetrics *WatchDog) {
+func FlushHit(appMetrics *AppMetrics) {
 	appMetrics.Mux.Lock()
 	atomic.AddUint64(&appMetrics.FlushRequests, 1)
 	atomic.AddUint64(&appMetrics.TotalRequests, 1)
@@ -248,7 +248,7 @@ func FlushHit(appMetrics *WatchDog) {
 // AddHit is a setter that increments
 // its corresponding struct field every time a endpoint is hit
 // it also increments a total value
-func AddHit(appMetrics *WatchDog) {
+func AddHit(appMetrics *AppMetrics) {
 	appMetrics.Mux.Lock()
 	atomic.AddUint64(&appMetrics.AddRequests, 1)
 	atomic.AddUint64(&appMetrics.TotalRequests, 1)
@@ -258,7 +258,7 @@ func AddHit(appMetrics *WatchDog) {
 // DeleteHit is a setter that increments
 // its corresponding struct field every time a endpoint is hit
 // it also increments a total value
-func DeleteHit(appMetrics *WatchDog) {
+func DeleteHit(appMetrics *AppMetrics) {
 	appMetrics.Mux.Lock()
 	atomic.AddUint64(&appMetrics.DeleteRequests, 1)
 	atomic.AddUint64(&appMetrics.TotalRequests, 1)
@@ -268,7 +268,7 @@ func DeleteHit(appMetrics *WatchDog) {
 // PutHit is a setter that increments
 // its corresponding struct field every time a endpoint is hit
 // it also increments a total value
-func PutHit(appMetrics *WatchDog) {
+func PutHit(appMetrics *AppMetrics) {
 	appMetrics.Mux.Lock()
 	defer appMetrics.Mux.Unlock()
 	atomic.AddUint64(&appMetrics.PutRequests, 1)
@@ -276,8 +276,8 @@ func PutHit(appMetrics *WatchDog) {
 	
 }
 
-// Dump writes the contents of the watchdog struct to the watchdog log file
-func Dump(appMetrics *WatchDog) {
+// Dump writes the contents of the appMetrics struct to the appMetrics log file
+func Dump(appMetrics *AppMetrics) {
 	usr, _ := user.Current()
 	configPath := usr.HomeDir
 
@@ -285,19 +285,19 @@ func Dump(appMetrics *WatchDog) {
 	for {
 		time.Sleep(appMetrics.WriteInterval * time.Second)
 
-		needRotate, err := utils.LogMustRotate(configPath + WatchDogLogFilePath, MaxWatchDogLogSize)
+		needRotate, err := utils.LogMustRotate(configPath + AppMetricsLogFilePath, MaxAppMetricsLogSize)
 		if err != nil {
 			log.Fatalf("failed to check if log needs to be rotated: %s", err.Error())
 		}
 		if needRotate {
-			nBytes, err := utils.Rotate(configPath + WatchDogLogFilePath, configPath + WatchDogTempFileName)
+			nBytes, err := utils.Rotate(configPath + AppMetricsLogFilePath, configPath + AppMetricsTempFileName)
 			if err != nil {
-				log.Fatalf("failed to rotate watchdog log file: %s", err.Error())
+				log.Fatalf("failed to rotate appMetrics log file: %s", err.Error())
 			}
-			log.Printf("successfully rotated watchdog log file: %d bytes rotated", nBytes)
+			log.Printf("successfully rotated appMetrics log file: %d bytes rotated", nBytes)
 		}
 
-		file, err := os.OpenFile(configPath + WatchDogLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
+		file, err := os.OpenFile(configPath + AppMetricsLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
 		if err != nil {
 			fmt.Println(err) // Allows the CI runner to test successfully (Update when test_config is working)
 		}
@@ -319,22 +319,22 @@ func Dump(appMetrics *WatchDog) {
 	}
 }
 
-// GetWatchdogMetrics reads the Watchdog log
+// GetAppMetrics reads the AppMetrics log
 // unmarshals each entry and appends it to a slice
-func GetWatchdogMetrics() response.CacheResponse {
+func GetAppMetrics() response.CacheResponse {
 	usr, _ := user.Current()
 	configPath := usr.HomeDir
 
-	file, err := os.Open(configPath + WatchDogLogFilePath)
+	file, err := os.Open(configPath + AppMetricsLogFilePath)
 	if err != nil {
-		log.Fatalf("failed to open watchdog log file: %s", err.Error())
+		log.Fatalf("failed to open appMetrics log file: %s", err.Error())
 	}
 	defer file.Close()
 
-	var entries []ReadWatchDog
+	var entries []ReadAppMetrics
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		var entry ReadWatchDog
+		var entry ReadAppMetrics
 		line := scanner.Text()
 		json.Unmarshal([]byte(line), &entry)
 		entries = append(entries, entry)

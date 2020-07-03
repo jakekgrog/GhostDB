@@ -14,12 +14,12 @@ import (
 )
 
 const (
-	SnitchLogFileName = "/ghostdb/ghostdb_snitch.log"
-	SnitchTempFileName = "/ghostdb/ghostdb_snitch_tmp.log"
-	MaxSnitchLogSize = 10000000
+	SysMetricsLogFilename = "/ghostdb/ghostdb_sys_metrics.log"
+	SysMetricsTempFilename = "/ghostdb/ghostdb_sys_metrics_tmp.log"
+	MaxSysMetricsLogSize = 10000000
 )
 
-type Snitch struct {
+type SysMetrics struct {
 	Timestamp    string
 
 	// Alloc is bytes of allocated heap objects.
@@ -161,85 +161,85 @@ type Snitch struct {
 	NumGoroutine int
 }
 
-func StartSnitchMonitor() {
-	var snitch Snitch
+func StartSysMetricsMonitor() {
+	var sysMetrics SysMetrics
 	var rt runtime.MemStats
 	runtime.ReadMemStats(&rt)
 
-	snitch.Timestamp = time.Now().Format(time.RFC3339)
-	snitch.NumGoroutine = runtime.NumGoroutine()
-	snitch.Alloc = rt.Alloc
-	snitch.TotalAlloc = rt.TotalAlloc
-	snitch.Sys = rt.Sys
-	snitch.Lookups = rt.Lookups
-	snitch.Mallocs = rt.Mallocs
-	snitch.Frees = rt.Frees
-	snitch.LiveObjects = snitch.Mallocs - rt.Frees
-	snitch.HeapAlloc = rt.HeapAlloc
-	snitch.HeapSys = rt.HeapSys
-	snitch.HeapIdle = rt.HeapIdle
-	snitch.HeapInuse = rt.HeapInuse
-	snitch.HeapReleased = rt.HeapReleased
-	snitch.StackInuse = rt.StackInuse
-	snitch.StackSys = rt.StackSys
-	snitch.GCSys = rt.GCSys
-	snitch.NextGC = rt.NextGC
-	snitch.LastGC = rt.LastGC
-	snitch.PauseTotalNs = rt.PauseTotalNs
-	snitch.NumGC = rt.NumGC
+	sysMetrics.Timestamp = time.Now().Format(time.RFC3339)
+	sysMetrics.NumGoroutine = runtime.NumGoroutine()
+	sysMetrics.Alloc = rt.Alloc
+	sysMetrics.TotalAlloc = rt.TotalAlloc
+	sysMetrics.Sys = rt.Sys
+	sysMetrics.Lookups = rt.Lookups
+	sysMetrics.Mallocs = rt.Mallocs
+	sysMetrics.Frees = rt.Frees
+	sysMetrics.LiveObjects = sysMetrics.Mallocs - rt.Frees
+	sysMetrics.HeapAlloc = rt.HeapAlloc
+	sysMetrics.HeapSys = rt.HeapSys
+	sysMetrics.HeapIdle = rt.HeapIdle
+	sysMetrics.HeapInuse = rt.HeapInuse
+	sysMetrics.HeapReleased = rt.HeapReleased
+	sysMetrics.StackInuse = rt.StackInuse
+	sysMetrics.StackSys = rt.StackSys
+	sysMetrics.GCSys = rt.GCSys
+	sysMetrics.NextGC = rt.NextGC
+	sysMetrics.LastGC = rt.LastGC
+	sysMetrics.PauseTotalNs = rt.PauseTotalNs
+	sysMetrics.NumGC = rt.NumGC
 
-	metrics, _ := json.Marshal(snitch)
+	metrics, _ := json.Marshal(sysMetrics)
 	metrics = append(metrics, "\n"...)
 
 	usr, _ := user.Current()
 	configPath := usr.HomeDir
 
-	needRotate, err := utils.LogMustRotate(configPath + SnitchLogFileName, MaxSnitchLogSize)
+	needRotate, err := utils.LogMustRotate(configPath + SysMetricsLogFilename, MaxSysMetricsLogSize)
 	if err != nil {
 		log.Fatalf("failed to check if log needs to be rotated: %s", err.Error())
 	}
 	if needRotate {
-		nBytes, err := utils.Rotate(configPath + SnitchLogFileName, configPath + SnitchTempFileName)
+		nBytes, err := utils.Rotate(configPath + SysMetricsLogFilename, configPath + SysMetricsTempFilename)
 		if err != nil {
-			log.Fatalf("failed to rotate snitch log file: %s", err.Error())
+			log.Fatalf("failed to rotate sysMetrics log file: %s", err.Error())
 		}
-		log.Printf("successfully rotated snitch log file: %d bytes rotated", nBytes)
+		log.Printf("successfully rotated sysMetrics log file: %d bytes rotated", nBytes)
 	}
 
-	file, err := os.OpenFile(configPath + SnitchLogFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(configPath + SysMetricsLogFilename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Fatalf("failed to open snitch log file: %s", err.Error())
+		log.Fatalf("failed to open sysMetrics log file: %s", err.Error())
 	}
 	defer file.Close()
 
-	// Underscore shows bytes written (FOR USE IN WATCHDOG METRICS)
+	// Underscore shows bytes written (FOR USE IN APP METRICS)
 	file.Write(metrics)
 	if err != nil {
-		log.Fatalf("failed to write to snitch log: %s", err.Error())
+		log.Fatalf("failed to write to sysMetrics log: %s", err.Error())
 	}
 
 	// Sets the finalizer associated with the object
 	// allowing it to be released back to the heap
-	runtime.SetFinalizer(&snitch, func(snitch *Snitch) {})
+	runtime.SetFinalizer(&sysMetrics, func(sysMetrics *SysMetrics) {})
 }
 
-// GetSnitchMetrics reads the snitch log file and
-// returns the entries in the log file as a Snitch
+// GetSysMetrics reads the sys metrics log file and
+// returns the entries in the log file as a SysMetrics
 // object array.
-func GetSnitchMetrics() response.CacheResponse {
+func GetSysMetrics() response.CacheResponse {
 	usr, _ := user.Current()
 	configPath := usr.HomeDir
 
-	file, err := os.Open(configPath + SnitchLogFileName)
+	file, err := os.Open(configPath + SysMetricsLogFilename)
 	if err != nil {
-		log.Fatalf("failed to open snitch log file: %s", err.Error())
+		log.Fatalf("failed to open system metrics log file: %s", err.Error())
 	}
 	defer file.Close()
 
-	var data []Snitch
+	var data []SysMetrics
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		var entry Snitch
+		var entry SysMetrics
 		line := scanner.Text()
 		json.Unmarshal([]byte(line), &entry)
 		data = append(data, entry)

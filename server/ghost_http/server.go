@@ -18,8 +18,8 @@ var (
 	GHOST_ADD = "/add"
 	GHOST_DELETE = "/delete"
 	GHOST_FLUSH = "/flush"
-	GHOST_SNITCH = "/getSnitchMetrics"
-	GHOST_WATCHDOG = "/getWatchdogMetrics"
+	GHOST_SYS_METRICS = "/getSysMetrics"
+	GHOST_APP_METRICS = "/getAppMetrics"
 	GHOST_PING = "/ping"
 	GHOST_NODE_SIZE = "/nodeSize"
 )
@@ -50,8 +50,10 @@ func Router() {
 
 		var res response.CacheResponse
 		// Handle SysMet
-		if cmd == "getSnitchMetrics" {
-			res = system_monitor.GetSnitchMetrics()
+		if cmd == "getSysMetrics" {
+			res = system_monitor.GetSysMetrics()
+		} else if cmd == "ping" {
+			res = response.NewPingResponse()
 		} else {
 			res = store.Execute(cmd, *req)
 		}

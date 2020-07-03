@@ -5,15 +5,15 @@ import (
 	"time"
 )
 
-// SnitchScheduler represents a scheduler for snitch system metrics logger
-type SnitchScheduler struct {
+// SysMetricsScheduler represents a scheduler for system metrics logger
+type SysMetricsScheduler struct {
 	Interval time.Duration
 	stop     chan bool
 }
 
-// NewSnitchScheduler initializes a new Snitch Scheduler
-func NewSnitchScheduler(interval int32) *SnitchScheduler {
-	scheduler := &SnitchScheduler{
+// NewSysMetricsScheduler initializes a new SysMetrics Scheduler
+func NewSysMetricsScheduler(interval int32) *SysMetricsScheduler {
+	scheduler := &SysMetricsScheduler{
 		Interval: time.Duration(interval) * time.Second,
 		stop:     make(chan bool),
 	}
@@ -21,8 +21,8 @@ func NewSnitchScheduler(interval int32) *SnitchScheduler {
 	return scheduler
 }
 
-// StartSnitch starts the Snitch monitor
-func StartSnitch(scheduler *SnitchScheduler) {
+// StartSysMetrics starts the SysMetrics monitor
+func StartSysMetrics(scheduler *SysMetricsScheduler) {
 	configPath, _ := os.UserConfigDir()
 	if _, err := os.Stat(configPath + "/ghostdb"); os.IsNotExist(err) {
 		os.Mkdir(configPath+"/ghostdb", 0777)
@@ -33,7 +33,7 @@ func StartSnitch(scheduler *SnitchScheduler) {
 	for {
 		select {
 		case <-ticker.C:
-			go StartSnitchMonitor()
+			go StartSysMetricsMonitor()
 		case <-scheduler.stop:
 			ticker.Stop()
 			return
@@ -41,8 +41,8 @@ func StartSnitch(scheduler *SnitchScheduler) {
 	}
 }
 
-// StopSnitch stops the snitch scheduler by passing
+// StopSysMetrics stops the sys metrics scheduler by passing
 // a bool to the scheduler stop channel.
-func StopSnitch(scheduler *SnitchScheduler) {
+func StopSysMetrics(scheduler *SysMetricsScheduler) {
 	scheduler.stop <- true
 }

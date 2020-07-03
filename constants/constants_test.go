@@ -13,7 +13,7 @@ func TestConstants(t *testing.T) {
 	utils.AssertEqual(t, STORE_DELETE, "delete", "")
 	utils.AssertEqual(t, STORE_FLUSH, "flush", "")
 	utils.AssertEqual(t, STORE_NODE_SIZE, "nodeSize", "")
-	utils.AssertEqual(t, STORE_WATCHDOG, "getWatchdogMetrics", "")
+	utils.AssertEqual(t, STORE_APP_METRICS, "getAppMetrics", "")
 
 	utils.AssertEqual(t, LRU_TYPE, "LRU", "")
 	utils.AssertEqual(t, LFU_TYPE, "LFU", "")

@@ -58,3 +58,12 @@ func BadCommandResponse(cmd string) CacheResponse {
 		Error: INVALID_COMMAND_ERR,
 	}
 }
+
+func NewPingResponse() CacheResponse {
+	return CacheResponse {
+		Gobj: object.NewEmptyCacheObject(),
+		Status: 1,
+		Message: "Pong!",
+		Error: "",
+	}
+}

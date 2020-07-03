@@ -9,15 +9,15 @@ const (
 	CONFIG_FILE_LINUX = "/etc/ghostdb/ghostdbConf.json"
 
 	DEFAULT_KEYSPACE_SIZE            = 65536
-	DEFAULT_SNITCH_METRIC_INTERVAL   = 300  // 5 minutes
-	DEFAULT_WATCHDOG_METRIC_INTERVAL = 300  // 5 minutes
+	DEFAULT_SYS_METRIC_INTERVAL   = 300  // 5 minutes
+	DEFAULT_APP_METRIC_INTERVAL = 300  // 5 minutes
 	DEFAULT_TTL                      = -1   // Never Expire
 	DEFAULT_CRAWLER_INTERVAL         = 300  // 5 minutes
 	DEFAULT_SNAPSHOT_INTERVAL        = 3600 // 1 hour
 	DEFAULT_SNAPSHOT_ENABLED         = true
 	DEFAULT_AOF_PERSISTENCE          = false
 	DEFAULT_AOF_MAX_BYTES            = 50000000 // 50MB
-	DEFAULT_ENTRY_TIMESTAMP          = true  // Enable timestamps in watchdog logs
+	DEFAULT_ENTRY_TIMESTAMP          = true  // Enable timestamps in appMetrics logs
 	DEFAULT_ENABLE_ENCRYPTION        = true
 	DEFAULT_PASSPHRASE               = "SUPPLY_ME"
 )
@@ -27,15 +27,15 @@ type Configuration struct {
 	// of key-value pairs allowed in the cache
 	KeyspaceSize           int32
 
-	// SnitchMetricInterval represents the interval
-	// in seconds of when the snitch logging subsystem
+	// SysMetricInterval represents the interval
+	// in seconds of when the sys metrics logging subsystem
 	// should output to the log file.
-	SnitchMetricInterval   int32
+	SysMetricInterval   int32
 
-	// WatchdogMetricInterval represents the interval
-	// in seconds of when the watchdog logging subsystem
+	// AppMetricInterval represents the interval
+	// in seconds of when the app metrics logging subsystem
 	// should output to the log file.
-	WatchdogMetricInterval int32
+	AppMetricInterval int32
 
 	// DefaultTTL represents the default time-to-live
 	// for key-value pairs in the cache. If set to -1
@@ -66,7 +66,7 @@ type Configuration struct {
 	AofMaxBytes            int64
 
 	// EntryTimestamp is a boolean which enables timestamping for
-	// entries in the watchdog logging subsystem.
+	// entries in the appMetrics logging subsystem.
 	EntryTimestamp         bool
 
 	// EnableEncryption is a bool that enables encryption of
@@ -91,8 +91,8 @@ func InitializeConfiguration() Configuration {
 // object if the initializer was unable to initialize from a config file.
 func (conf *Configuration) SetDefaultParams() {
 	conf.KeyspaceSize = DEFAULT_KEYSPACE_SIZE
-	conf.SnitchMetricInterval = DEFAULT_SNITCH_METRIC_INTERVAL
-	conf.WatchdogMetricInterval = DEFAULT_WATCHDOG_METRIC_INTERVAL
+	conf.SysMetricInterval = DEFAULT_SYS_METRIC_INTERVAL
+	conf.AppMetricInterval = DEFAULT_APP_METRIC_INTERVAL
 	conf.DefaultTTL = DEFAULT_TTL
 	conf.CrawlerInterval = DEFAULT_CRAWLER_INTERVAL
 	conf.SnapshotInterval = DEFAULT_SNAPSHOT_INTERVAL

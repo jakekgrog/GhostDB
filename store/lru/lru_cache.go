@@ -217,16 +217,19 @@ func (cache *LRUCache) Delete(args request.CacheRequest) response.CacheResponse 
 
 // Flush removes all key/value pairs from the cache even if they have not expired
 func (cache *LRUCache) Flush(args request.CacheRequest) response.CacheResponse {
+	log.Println("ARGS", args)
 	for k := range cache.Hashtable {
 		n, _ := RemoveLast(cache.DLL)
 		if n == nil {
 			break
 		}
-		delete(cache.Hashtable, k)
+		deleteFromHashtable(cache, k)
 		cache.Mux.Lock()
 		atomic.AddInt32(&cache.Count, -1)
 		cache.Mux.Unlock()
 	}
+
+	cache.Full = false
 	
 	if cache.Count == int32(0) {
 		return response.NewResponseFromMessage(FLUSHED, 1)

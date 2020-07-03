@@ -1,7 +1,7 @@
 {
     "keyspaceSize": 65536,
-    "snitchMetricInterval": 10,
-    "watchdogMetricInterval": 10,
+    "sysMetricInterval": 10,
+    "appMetricInterval": 10,
     "defaultTTL": -1,
     "crawlerInterval": 300,
     "snapshotInterval": 3600,

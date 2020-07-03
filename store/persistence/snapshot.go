@@ -101,10 +101,10 @@ func BuildCacheFromSnapshot(bs *[]byte) (lru.LRUCache, error) {
 		cache.Hashtable[v.Key] = n
 	}
 
-	// Reset the watchdog
-	// wdMetricInterval := time.Duration(config.WatchdogMetricInterval)
+	// Reset the appMetrics
+	// ppMetricInterval := time.Duration(config.AppMetricsInterval)
 	// TODO: Add proper handling for this.
-	// cache.Watchdog = monitor.Boot(wdMetricInterval, config.EntryTimestamp)
+	// cache.AppMetrics = monitor.Boot(appMetricInterval, config.EntryTimestamp)
 
 	cache.DLL = ll
 

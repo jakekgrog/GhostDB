@@ -13,7 +13,7 @@ import (
 	"github.com/ghostdb/ghostdb-cache-node/store/monitor"
 )
 
-func TestWatchDog(t *testing.T) {
+func TestAppMetrics(t *testing.T) {
 	var config config.Configuration = config.InitializeConfiguration()
 	
 	var store *Store
@@ -24,7 +24,7 @@ func TestWatchDog(t *testing.T) {
 	//Delete pre-existing metrics
 	usr, _ := user.Current()
 	configPath := usr.HomeDir
-	os.Remove(configPath + monitor.WatchDogLogFilePath)
+	os.Remove(configPath + monitor.AppMetricsLogFilePath)
 	os.Remove(configPath + "/ghostDBPersistence.log")
 
 	store.Execute("add", request.NewRequestFromValues("Key1", "Value1", -1))
@@ -41,10 +41,10 @@ func TestWatchDog(t *testing.T) {
 	store.Execute("flush", request.NewRequestFromValues("Key1", "", -1))
 	time.Sleep(11 * time.Second)
 
-	utils.AssertEqual(t, utils.FileExists(configPath+monitor.WatchDogLogFilePath), true, "")
-	utils.AssertEqual(t, utils.FileNotEmpty(configPath+monitor.WatchDogLogFilePath), true, "")
+	utils.AssertEqual(t, utils.FileExists(configPath+monitor.AppMetricsLogFilePath), true, "")
+	utils.AssertEqual(t, utils.FileNotEmpty(configPath+monitor.AppMetricsLogFilePath), true, "")
 
-	file, err := os.Open(configPath + monitor.WatchDogLogFilePath)
+	file, err := os.Open(configPath + monitor.AppMetricsLogFilePath)
 	if err != nil {
 		panic(err)
 	}

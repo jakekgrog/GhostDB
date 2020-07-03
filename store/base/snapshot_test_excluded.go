@@ -40,8 +40,8 @@ func TestSerializer(t *testing.T) {
 
 	// Test the config was rebuilt correctly.
 	utils.AssertEqual(t, store.Conf.KeyspaceSize, int32(65536), "")
-	utils.AssertEqual(t, store.Conf.SnitchMetricInterval, int32(300), "")
-	utils.AssertEqual(t, store.Conf.WatchdogMetricInterval, int32(300), "")
+	utils.AssertEqual(t, store.Conf.SysMetricInterval, int32(300), "")
+	utils.AssertEqual(t, store.Conf.AppMetricInterval, int32(300), "")
 	utils.AssertEqual(t, store.Conf.DefaultTTL, int32(-1), "")
 	utils.AssertEqual(t, store.Conf.CrawlerInterval, int32(300), "")
 	utils.AssertEqual(t, store.Conf.SnapshotInterval, int32(3600), "")

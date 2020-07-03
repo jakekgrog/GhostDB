@@ -23,7 +23,7 @@ var store *base.Store
 
 // Schedulers
 //var crawlerScheduler *lru.CrawlerScheduler
-var snitchScheduler *system_monitor.SnitchScheduler
+var sysMetricsScheduler *system_monitor.SysMetricsScheduler
 //var snapshotScheduler *lru.SnapshotScheduler
 
 func init() {
@@ -38,19 +38,19 @@ func init() {
 		log.Printf("Failed to create GhostDB configuration directory")
 	}
 
-	// Create snitch and watchdog logfiles if they do not exist
-	snitchFile, err := os.OpenFile(configPath + system_monitor.SnitchLogFileName, os.O_WRONLY | os.O_CREATE | os.O_APPEND, 0777)
+	// Create sysMetrics and appMetrics logfiles if they do not exist
+	sysMetricsFile, err := os.OpenFile(configPath + system_monitor.SysMetricsLogFilename, os.O_WRONLY | os.O_CREATE | os.O_APPEND, 0777)
 	if err != nil {
-		log.Fatalf("Failed to create or read snitch log file: %s", err.Error())
+		log.Fatalf("Failed to create or read sysMetrics log file: %s", err.Error())
 		panic(err)
 	}
-	defer snitchFile.Close()
+	defer sysMetricsFile.Close()
 
-	watchdogFile, err := os.OpenFile(configPath + monitor.WatchDogLogFilePath, os.O_WRONLY | os.O_CREATE | os.O_APPEND, 0644)
+	appMetricsFile, err := os.OpenFile(configPath + monitor.AppMetricsLogFilePath, os.O_WRONLY | os.O_CREATE | os.O_APPEND, 0644)
 	if err != nil {
-		log.Fatalf("Failed to create or read watchdog log file: %s", err.Error())
+		log.Fatalf("Failed to create or read appMetrics log file: %s", err.Error())
 	}
-	defer watchdogFile.Close()
+	defer appMetricsFile.Close()
 
 
 	store = base.NewStore("LRU") // FUTURE: Read store type from config
@@ -82,15 +82,15 @@ func init() {
 	store.RunStore()
 
 	// crawlerScheduler = lru.NewCrawlerScheduler(conf.CrawlerInterval)
-	snitchScheduler = system_monitor.NewSnitchScheduler(conf.SnitchMetricInterval)
+	sysMetricsScheduler = system_monitor.NewSysMetricsScheduler(conf.SysMetricInterval)
 	// snapshotScheduler = lru.NewSnapshotScheduler(conf.SnapshotInterval)
 }
 
 func main() {
 	// go lru.StartCrawlers(store.Cache, crawlerScheduler)
 	// log.Println("successfully started crawler lru...")
-	go system_monitor.StartSnitch(snitchScheduler)
-	log.Println("successfully started snitch monitor...")
+	go system_monitor.StartSysMetrics(sysMetricsScheduler)
+	log.Println("successfully started sysMetrics monitor...")
 	// if conf.SnapshotEnabled {
 	// 	go lru.StartSnapshotter(store.Cache, snapshotScheduler)
 	// 	log.Println("successfully started snapshot lru...")
