@@ -101,11 +101,6 @@ func BuildCacheFromSnapshot(bs *[]byte) (lru.LRUCache, error) {
 		cache.Hashtable[v.Key] = n
 	}
 
-	// Reset the appMetrics
-	// ppMetricInterval := time.Duration(config.AppMetricsInterval)
-	// TODO: Add proper handling for this.
-	// cache.AppMetrics = monitor.Boot(appMetricInterval, config.EntryTimestamp)
-
 	cache.DLL = ll
 
 	return cache, nil

@@ -22,9 +22,7 @@ var conf config.Configuration
 var store *base.Store
 
 // Schedulers
-//var crawlerScheduler *lru.CrawlerScheduler
 var sysMetricsScheduler *system_monitor.SysMetricsScheduler
-//var snapshotScheduler *lru.SnapshotScheduler
 
 func init() {
 	conf = config.InitializeConfiguration()
@@ -81,20 +79,12 @@ func init() {
 
 	store.RunStore()
 
-	// crawlerScheduler = lru.NewCrawlerScheduler(conf.CrawlerInterval)
 	sysMetricsScheduler = system_monitor.NewSysMetricsScheduler(conf.SysMetricInterval)
-	// snapshotScheduler = lru.NewSnapshotScheduler(conf.SnapshotInterval)
 }
 
 func main() {
-	// go lru.StartCrawlers(store.Cache, crawlerScheduler)
-	// log.Println("successfully started crawler lru...")
 	go system_monitor.StartSysMetrics(sysMetricsScheduler)
 	log.Println("successfully started sysMetrics monitor...")
-	// if conf.SnapshotEnabled {
-	// 	go lru.StartSnapshotter(store.Cache, snapshotScheduler)
-	// 	log.Println("successfully started snapshot lru...")
-	// }
 	ghost_http.NodeConfig(store)
 	log.Println("successfully started GhostDB Node server...")
 	log.Println("GhostDB started successfully...")
