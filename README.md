@@ -1,4 +1,4 @@
-> The original repository can be found here - [Original GhostDB Repo](https://github.com/jakekgrog/GhostDB)
+![Build](https://github.com/GhostDB/GhostDB/workflows/GhostDB%20Node%20Test/badge.svg)
 
 # GhostDB
 
