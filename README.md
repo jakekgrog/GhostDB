@@ -12,7 +12,7 @@ GhostDB is designed to speed up dynamic database or API driven websites by stori
 
 ## :car: Roadmap
 
-This is a high-level roadmap of what we want GhostDB to become by the end of 2020. If you have any feature requests please [create one](https://github.com/jakekgrog/GhostDB/blob/master/docs/FEATURE_REQUEST.md) from the template and label it as `feature request`!
+This is a high-level roadmap of what we want GhostDB to become by the end of 2020. If you have any feature requests please create one from the [template](https://github.com/jakekgrog/GhostDB/blob/master/docs/FEATURE_REQUEST.md) and label it as `feature request`!
 
 - First hand support for list, set, stack and queue data structures
 - Atomic command queues
