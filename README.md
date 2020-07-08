@@ -1,6 +1,11 @@
 ![GhostDB logo](https://imgur.com/ZEGFVo6.png)
 
 ![Build](https://github.com/GhostDB/GhostDB/workflows/GhostDB%20Node%20Test/badge.svg)
+[![Twitter](https://img.shields.io/badge/ghostdb-v2.0.0-green)](http://www.ghostdbcache.com)
+
+[![Discord](https://img.shields.io/badge/chat-Join%20us!-green?style=for-the-badge&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/ZkT5Sdf)
+
+
 
 ## :books: Overview
 
