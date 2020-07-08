@@ -1,10 +1,8 @@
-![GhostDB Logo](https://imgur.com/p5ggbEt)
+![GhostDB Logo](https://imgur.com/a/iRdVmN4)
 
 ![Build](https://github.com/GhostDB/GhostDB/workflows/GhostDB%20Node%20Test/badge.svg)
 
-https://github.com/tograh/testrepository/3DTest.png
-
-# :books: Overview
+## :books: Overview
 
 GhostDB is a distributed, in-memory, general purpose key-value data store that delivers microsecond performance at any scale.
 
@@ -27,18 +25,18 @@ This is a high-level roadmap of what we want GhostDB to become by the end of 202
 
 To install GhostDB please consult the [installation guide](https://github.com/jakekgrog/GhostDB/blob/master/docs/INSTALL.md) for a quick walkthrough on setting up the system.
 
-### :hammer: Cluster Configuration
+## :hammer: Cluster Configuration
 
 To configure a GhostDB cluster please follow the instructions in the [configuration guide](https://github.com/jakekgrog/GhostDB/blob/master/docs/INSTALL.md)
 
 ## :pencil2: Authors
 
-** Jake Grogan **
+**Jake Grogan**
 
 - Email: <jake.kgrogan@gmail.com>
 - Github: [@jakekgrog](https://github.com/jakekgrog)
 
-** Connor Mulready **
+**Connor Mulready**
 
 - Github: [@nohclu](https://github.com/nohclu)
 
