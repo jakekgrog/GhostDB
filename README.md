@@ -1,4 +1,4 @@
-![GhostDB logo](https://imgur.com/p5ggbEt.png)
+![GhostDB logo](https://imgur.com/ZEGFVo6.png)
 
 ![Build](https://github.com/GhostDB/GhostDB/workflows/GhostDB%20Node%20Test/badge.svg)
 
