@@ -148,7 +148,7 @@ func (cache *LRUCache) Put(args request.CacheRequest) response.CacheResponse {
 		inCache := keyInCache(cache, key)
 		if inCache {
 			// Get the value node
-			node, _ := cache.Hashtable[key]
+			node := cache.Hashtable[key]
 
 			// Update the value
 			node.Value = value
