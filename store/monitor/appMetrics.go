@@ -330,7 +330,6 @@ func Dump(appMetrics *AppMetrics) {
 		if err != nil {
 			fmt.Println(err) // Allows the CI runner to test successfully (Update when test_config is working)
 		}
-		defer file.Close()
 
 		if appMetrics.EntryTimestamp {
 			total = fmt.Sprintf(`{"Timestamp": "%s", "TotalRequsts": %d, `, time.Now().Format(time.RFC3339), appMetrics.TotalRequests)
@@ -345,6 +344,7 @@ func Dump(appMetrics *AppMetrics) {
 		flushMetrics := fmt.Sprintf(`"FlushRequests": %d, "ErrFlush": %d}`+"\n", appMetrics.FlushRequests, appMetrics.ErrFlush)
 
 		file.WriteString(total + getMetrics + putMetrics + addMetrics + deleteMetrics + flushMetrics)
+		file.Close()
 	}
 }
 
