@@ -38,7 +38,7 @@ import (
 	"syscall"
 
 	"github.com/ghostdb/ghostdb-cache-node/config"
-	"github.com/ghostdb/ghostdb-cache-node/server/ghost_http"
+	"github.com/ghostdb/ghostdb-cache-node/server/ghostHTTP"
 	"github.com/ghostdb/ghostdb-cache-node/store/base"
 	"github.com/ghostdb/ghostdb-cache-node/store/monitor"
 	"github.com/ghostdb/ghostdb-cache-node/store/persistence"
@@ -113,7 +113,7 @@ func init() {
 func main() {
 	go systemMonitor.StartSysMetrics(sysMetricsScheduler)
 	log.Println("successfully started sysMetrics monitor...")
-	ghost_http.NodeConfig(store)
+	ghostHTTP.NodeConfig(store)
 	log.Println("successfully started GhostDB Node server...")
 	log.Println("GhostDB started successfully...")
 
@@ -125,5 +125,5 @@ func main() {
 		os.Exit(1)
 	}()
 
-	ghost_http.Router()
+	ghostHTTP.Router()
 }
