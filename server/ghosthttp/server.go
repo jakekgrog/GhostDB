@@ -28,7 +28,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package ghostHTTP
+package ghosthttp
 
 import (
 	"encoding/json"
@@ -38,7 +38,7 @@ import (
 	"github.com/ghostdb/ghostdb-cache-node/store/base"
 	"github.com/ghostdb/ghostdb-cache-node/store/request"
 	"github.com/ghostdb/ghostdb-cache-node/store/response"
-	"github.com/ghostdb/ghostdb-cache-node/systemMonitor"
+	"github.com/ghostdb/ghostdb-cache-node/systemmonitor"
 	"github.com/valyala/fasthttp"
 )
 
@@ -81,7 +81,7 @@ func Router() {
 		var res response.CacheResponse
 		// Handle SysMet
 		if cmd == "getSysMetrics" {
-			res = systemMonitor.GetSysMetrics()
+			res = systemmonitor.GetSysMetrics()
 		} else if cmd == "ping" {
 			res = response.NewPingResponse()
 		} else {

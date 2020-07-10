@@ -28,30 +28,51 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package systemMonitor
+package systemmonitor
 
 import (
-	"fmt"
-	"os/user"
-	"testing"
+	"os"
 	"time"
-
-	"github.com/ghostdb/ghostdb-cache-node/utils"
 )
 
-func TestSysMetricsMonitor(t *testing.T) {
-	sch := NewSysMetricsScheduler(int32(2))
-	go StartSysMetrics(sch)
-	time.Sleep(6 * time.Second)
-	StopSysMetrics(sch)
-
-	usr, _ := user.Current()
-	configPath := usr.HomeDir
-
-	utils.AssertEqual(t, utils.FileExists(configPath+SysMetricsLogFilename), true, "")
-	utils.AssertEqual(t, utils.FileNotEmpty(configPath+SysMetricsLogFilename), true, "")
+// SysMetricsScheduler represents a scheduler for system metrics logger
+type SysMetricsScheduler struct {
+	Interval time.Duration
+	stop     chan bool
 }
 
-func TestGetSysMetrics(t *testing.T) {
-	fmt.Println(GetSysMetrics())
+// NewSysMetricsScheduler initializes a new SysMetrics Scheduler
+func NewSysMetricsScheduler(interval int32) *SysMetricsScheduler {
+	scheduler := &SysMetricsScheduler{
+		Interval: time.Duration(interval) * time.Second,
+		stop:     make(chan bool),
+	}
+
+	return scheduler
+}
+
+// StartSysMetrics starts the SysMetrics monitor
+func StartSysMetrics(scheduler *SysMetricsScheduler) {
+	configPath, _ := os.UserConfigDir()
+	if _, err := os.Stat(configPath + "/ghostdb"); os.IsNotExist(err) {
+		os.Mkdir(configPath+"/ghostdb", 0o777)
+	}
+
+	ticker := time.NewTicker(scheduler.Interval)
+
+	for {
+		select {
+		case <-ticker.C:
+			go StartSysMetricsMonitor()
+		case <-scheduler.stop:
+			ticker.Stop()
+			return
+		}
+	}
+}
+
+// StopSysMetrics stops the sys metrics scheduler by passing
+// a bool to the scheduler stop channel.
+func StopSysMetrics(scheduler *SysMetricsScheduler) {
+	scheduler.stop <- true
 }
