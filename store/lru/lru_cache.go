@@ -152,14 +152,13 @@ func (cache *LRUCache) Put(args request.CacheRequest) response.CacheResponse {
 			// Update the value
 			node.Value = value
 			return response.NewResponseFromMessage(STORED, 1)
-		} else {
-			n, _ := RemoveLast(cache.DLL)
-
-			deleteFromHashtable(cache, n.Key)
-
-			newNode, _ := Insert(cache.DLL, key, value, ttl)
-			insertIntoHashtable(cache, key, newNode)
 		}
+		n, _ := RemoveLast(cache.DLL)
+
+		deleteFromHashtable(cache, n.Key)
+
+		newNode, _ := Insert(cache.DLL, key, value, ttl)
+		insertIntoHashtable(cache, key, newNode)
 	}
 	return response.NewResponseFromMessage(STORED, 1)
 }
