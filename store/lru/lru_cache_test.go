@@ -67,7 +67,7 @@ func TestLru(t *testing.T) {
 	// HEAD -> Paris -> Dublin
 
 	v3 := cache.Get(request.NewRequestFromValues("America", "", -1)) // Should be a cache miss
-	utils.AssertEqual(t, CACHE_MISS, v3.Message, "")
+	utils.AssertEqual(t, CacheMiss, v3.Message, "")
 
 	cache.Put(request.NewRequestFromValues("Italy", "Rome", -1)) // Ireland should be evicted here
 
@@ -79,7 +79,7 @@ func TestLru(t *testing.T) {
 	// HEAD -> Paris -> Rome
 
 	message := cache.Add(request.NewRequestFromValues("France", "Paris", -1))
-	utils.AssertEqual(t, NOT_STORED, message.Message, "")
+	utils.AssertEqual(t, NotStored, message.Message, "")
 
 	message = cache.Add(request.NewRequestFromValues("Poland", "Warsaw", -1))
 	utils.AssertEqual(t, STORED, message.Message, "")
@@ -91,7 +91,7 @@ func TestLru(t *testing.T) {
 	utils.AssertEqual(t, message.Gobj.Value.(int32) > 0, true, "")
 
 	message = cache.Delete(request.NewRequestFromValues("USA", "", -1))
-	utils.AssertEqual(t, NOT_FOUND, message.Message, "")
+	utils.AssertEqual(t, NotFound, message.Message, "")
 
 	message = cache.Put(request.NewRequestFromValues("England", "London", -1))
 	utils.AssertEqual(t, STORED, message.Message, "")

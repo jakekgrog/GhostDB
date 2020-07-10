@@ -41,13 +41,13 @@ import (
 )
 
 const (
-	CACHE_MISS = "CACHE_MISS"
-	STORED     = "STORED"
-	NOT_STORED = "NOT_STORED"
-	REMOVED    = "REMOVED"
-	NOT_FOUND  = "NOT_FOUND"
-	FLUSHED    = "FLUSH"
-	ERR_FLUSH  = "ERR_FLUSH"
+	CacheMiss = "CACHE_MISS"
+	STORED    = "STORED"
+	NotStored = "NOT_STORED"
+	REMOVED   = "REMOVED"
+	NotFound  = "NOT_FOUND"
+	FLUSHED   = "FLUSH"
+	ErrFlush  = "ERR_FLUSH"
 )
 
 // LRUCache represents a cache object
@@ -182,7 +182,7 @@ func (cache *LRUCache) Add(args request.CacheRequest) response.CacheResponse {
 	_, ok := cache.Hashtable[key]
 	cache.Mux.Unlock()
 	if ok {
-		return response.NewResponseFromMessage(NOT_STORED, 0)
+		return response.NewResponseFromMessage(NotStored, 0)
 	}
 	if !cache.Full {
 		inCache := keyInCache(cache, key)
@@ -222,7 +222,7 @@ func (cache *LRUCache) Delete(args request.CacheRequest) response.CacheResponse 
 		cache.Mux.Unlock()
 
 		if nodeToRemove == nil {
-			return response.NewResponseFromMessage(NOT_FOUND, 0)
+			return response.NewResponseFromMessage(NotFound, 0)
 		}
 
 		deleteFromHashtable(cache, nodeToRemove.Key)
@@ -238,7 +238,7 @@ func (cache *LRUCache) Delete(args request.CacheRequest) response.CacheResponse 
 		cache.Full = false
 		return response.NewResponseFromMessage(REMOVED, 1)
 	}
-	return response.NewResponseFromMessage(NOT_FOUND, 0)
+	return response.NewResponseFromMessage(NotFound, 0)
 }
 
 // Flush removes all key/value pairs from the cache even if they have not expired
@@ -260,7 +260,7 @@ func (cache *LRUCache) Flush(args request.CacheRequest) response.CacheResponse {
 	if cache.Count == int32(0) {
 		return response.NewResponseFromMessage(FLUSHED, 1)
 	}
-	return response.NewResponseFromMessage(ERR_FLUSH, 0)
+	return response.NewResponseFromMessage(ErrFlush, 0)
 }
 
 // CountKeys return the number of keys in the cache
@@ -281,7 +281,7 @@ func (cache *LRUCache) DeleteByKey(key string) response.CacheResponse {
 		cache.Mux.Unlock()
 
 		if nodeToRemove == nil {
-			return response.NewResponseFromMessage(NOT_FOUND, 0)
+			return response.NewResponseFromMessage(NotFound, 0)
 		}
 
 		deleteFromHashtable(cache, nodeToRemove.Key)
@@ -298,7 +298,7 @@ func (cache *LRUCache) DeleteByKey(key string) response.CacheResponse {
 
 		return response.NewResponseFromMessage(REMOVED, 1)
 	}
-	return response.NewResponseFromMessage(NOT_FOUND, 0)
+	return response.NewResponseFromMessage(NotFound, 0)
 }
 
 func (cache *LRUCache) GetHashtableReference() *map[string]*Node {
