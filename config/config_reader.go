@@ -36,20 +36,20 @@ import (
 )
 
 const (
-	CONFIG_FILE_LINUX = "/etc/ghostdb/ghostdbConf.json"
+	ConfigFileLinux = "/etc/ghostdb/ghostdbConf.json"
 
-	DEFAULT_KEYSPACE_SIZE       = 65536
-	DEFAULT_SYS_METRIC_INTERVAL = 300  // 5 minutes
-	DEFAULT_APP_METRIC_INTERVAL = 300  // 5 minutes
-	DEFAULT_TTL                 = -1   // Never Expire
-	DEFAULT_CRAWLER_INTERVAL    = 300  // 5 minutes
-	DEFAULT_SNAPSHOT_INTERVAL   = 3600 // 1 hour
-	DEFAULT_SNAPSHOT_ENABLED    = true
-	DEFAULT_AOF_PERSISTENCE     = false
-	DEFAULT_AOF_MAX_BYTES       = 50000000 // 50MB
-	DEFAULT_ENTRY_TIMESTAMP     = true     // Enable timestamps in appMetrics logs
-	DEFAULT_ENABLE_ENCRYPTION   = true
-	DEFAULT_PASSPHRASE          = "SUPPLY_ME"
+	DefaultKeyspaceSize      = 65536
+	DefaultSysMetricInterval = 300  // 5 minutes
+	DefaultAppMetricInterval = 300  // 5 minutes
+	DefaultTtl               = -1   // Never Expire
+	DefaultCrawlerInterval   = 300  // 5 minutes
+	DefaultSnapshotInterval  = 3600 // 1 hour
+	DefaultSnapshotEnabled   = true
+	DefaultAofPersistence    = false
+	DefaultAofMaxBytes       = 50000000 // 50MB
+	DefaultEntryTimestamp    = true     // Enable timestamps in appMetrics logs
+	DefaultEnableEncryption  = true
+	DefaultPassphrase        = "SUPPLY_ME"
 )
 
 type Configuration struct {
@@ -120,18 +120,18 @@ func InitializeConfiguration() Configuration {
 // SetDefaultParams will set default parameters for the cache configuration
 // object if the initializer was unable to initialize from a config file.
 func (conf *Configuration) SetDefaultParams() {
-	conf.KeyspaceSize = DEFAULT_KEYSPACE_SIZE
-	conf.SysMetricInterval = DEFAULT_SYS_METRIC_INTERVAL
-	conf.AppMetricInterval = DEFAULT_APP_METRIC_INTERVAL
-	conf.DefaultTTL = DEFAULT_TTL
-	conf.CrawlerInterval = DEFAULT_CRAWLER_INTERVAL
-	conf.SnapshotInterval = DEFAULT_SNAPSHOT_INTERVAL
-	conf.SnapshotEnabled = DEFAULT_SNAPSHOT_ENABLED
-	conf.PersistenceAOF = DEFAULT_AOF_PERSISTENCE
-	conf.AofMaxBytes = DEFAULT_AOF_MAX_BYTES
-	conf.EntryTimestamp = DEFAULT_ENTRY_TIMESTAMP
-	conf.EnableEncryption = DEFAULT_ENABLE_ENCRYPTION
-	conf.Passphrase = DEFAULT_PASSPHRASE
+	conf.KeyspaceSize = DefaultKeyspaceSize
+	conf.SysMetricInterval = DefaultSysMetricInterval
+	conf.AppMetricInterval = DefaultAppMetricInterval
+	conf.DefaultTTL = DefaultTtl
+	conf.CrawlerInterval = DefaultCrawlerInterval
+	conf.SnapshotInterval = DefaultSnapshotInterval
+	conf.SnapshotEnabled = DefaultSnapshotEnabled
+	conf.PersistenceAOF = DefaultAofPersistence
+	conf.AofMaxBytes = DefaultAofMaxBytes
+	conf.EntryTimestamp = DefaultEntryTimestamp
+	conf.EnableEncryption = DefaultEnableEncryption
+	conf.Passphrase = DefaultPassphrase
 }
 
 // InitializeFromConfig initializes a configuration object from
@@ -139,7 +139,7 @@ func (conf *Configuration) SetDefaultParams() {
 func InitializeFromConfig() (Configuration, error) {
 	var config Configuration
 
-	file, err := ioutil.ReadFile(CONFIG_FILE_LINUX)
+	file, err := ioutil.ReadFile(ConfigFileLinux)
 	if err != nil {
 		return Configuration{}, err
 	}
