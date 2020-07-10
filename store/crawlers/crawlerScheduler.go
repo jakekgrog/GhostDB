@@ -68,13 +68,13 @@ func NewCrawlerScheduler(interval int32) *CrawlerScheduler {
 func StartCrawlers(cache *cache.Cache, scheduler *CrawlerScheduler) {
 	ticker := time.NewTicker(scheduler.Interval)
 	switch (*cache).(type) {
-	case *lru.LRUCache:
-		startDllCrawler((*cache).(*lru.LRUCache), ticker, scheduler)
+	case *lru.Cache:
+		startDllCrawler((*cache).(*lru.Cache), ticker, scheduler)
 	}
 }
 
 // startDllCrawler starts a crawler that crawls a doubly linked list
-func startDllCrawler(cache *lru.LRUCache, ticker *time.Ticker, scheduler *CrawlerScheduler) {
+func startDllCrawler(cache *lru.Cache, ticker *time.Ticker, scheduler *CrawlerScheduler) {
 	for {
 		select {
 		case <-ticker.C:

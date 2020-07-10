@@ -41,7 +41,7 @@ import (
 )
 
 func TestCrawler(t *testing.T) {
-	var cache *lru.LRUCache
+	var cache *lru.Cache
 
 	var config config.Configuration = config.InitializeConfiguration()
 	cache = lru.NewLRU(config)

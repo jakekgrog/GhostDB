@@ -37,14 +37,14 @@ import (
 )
 
 // StartCrawl crawls the cache and evicts stale data
-func StartCrawl(cache *lru.LRUCache) {
+func StartCrawl(cache *lru.Cache) {
 	markedKeys := mark(cache)
 	sweep(cache, markedKeys)
 }
 
 // Traverse the cache and mark key-value pair nodes
 // for removal.
-func mark(cache *lru.LRUCache) []string {
+func mark(cache *lru.Cache) []string {
 	markedKeys := []string{}
 
 	node, _ := lru.GetLastNode(cache.DLL)
@@ -73,7 +73,7 @@ func mark(cache *lru.LRUCache) []string {
 }
 
 // Sweep the cache removing the marked nodes
-func sweep(cache *lru.LRUCache, keys []string) {
+func sweep(cache *lru.Cache, keys []string) {
 	for _, key := range keys {
 		cache.DeleteByKey(key)
 	}

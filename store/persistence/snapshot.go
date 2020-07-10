@@ -57,14 +57,14 @@ const (
 
 func CreateSnapshot(cache *cache.Cache, config *config.Configuration) (bool, error) {
 	switch (*cache).(type) {
-	case *lru.LRUCache:
-		return createLruSnapshot((*cache).(*lru.LRUCache), config.EnableEncryption, config.Passphrase)
+	case *lru.Cache:
+		return createLruSnapshot((*cache).(*lru.Cache), config.EnableEncryption, config.Passphrase)
 	default:
 		return false, nil
 	}
 }
 
-func createLruSnapshot(cache *lru.LRUCache, encryption bool, passphrase ...string) (bool, error) {
+func createLruSnapshot(cache *lru.Cache, encryption bool, passphrase ...string) (bool, error) {
 	serialized, _ := json.MarshalIndent(cache, "", " ")
 
 	configPath, _ := os.UserConfigDir()
@@ -110,9 +110,9 @@ func GetSnapshotFilename() string {
 }
 
 // BuildCache rebuilds the cache from the byte stream of the snapshot
-func BuildCacheFromSnapshot(bs *[]byte) (lru.LRUCache, error) {
+func BuildCacheFromSnapshot(bs *[]byte) (lru.Cache, error) {
 	// Create a new cache instance.
-	var cache lru.LRUCache
+	var cache lru.Cache
 
 	// Unmarshal the byte stream and update the new cache object with the result.
 	err := json.Unmarshal(*bs, &cache)
@@ -128,7 +128,7 @@ func BuildCacheFromSnapshot(bs *[]byte) (lru.LRUCache, error) {
 	for _, v := range cache.Hashtable {
 		n, err := lru.Insert(ll, v.Key, v.Value, v.TTL)
 		if err != nil {
-			return lru.LRUCache{}, err
+			return lru.Cache{}, err
 		}
 		cache.Hashtable[v.Key] = n
 	}

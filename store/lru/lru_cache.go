@@ -51,7 +51,7 @@ const (
 )
 
 // LRUCache represents a cache object
-type LRUCache struct {
+type Cache struct {
 	// Size represents the maximum number of allowable
 	// key-value pairs in the cache.
 	Size int32
@@ -74,8 +74,8 @@ type LRUCache struct {
 }
 
 // NewLRU will initialize the cache
-func NewLRU(config config.Configuration) *LRUCache {
-	return &LRUCache{
+func NewLRU(config config.Configuration) *Cache {
+	return &Cache{
 		Size:      config.KeyspaceSize,
 		Count:     int32(0),
 		Full:      false,
@@ -89,7 +89,7 @@ func newHashtable() map[string]*Node {
 }
 
 // Get will fetch a key/value pair from the cache
-func (cache *LRUCache) Get(args request.CacheRequest) response.CacheResponse {
+func (cache *Cache) Get(args request.CacheRequest) response.CacheResponse {
 	// Fix in the FUTURE
 	// to use a method that validates the
 	// request object for this method.
@@ -121,7 +121,7 @@ func (cache *LRUCache) Get(args request.CacheRequest) response.CacheResponse {
 // Put will add a key/value pair to the cache, possibly
 // overwriting an existing key/value pair. Put will evict
 // a key/value pair if the cache is full.
-func (cache *LRUCache) Put(args request.CacheRequest) response.CacheResponse {
+func (cache *Cache) Put(args request.CacheRequest) response.CacheResponse {
 	key := args.Gobj.Key
 	value := args.Gobj.Value
 	ttl := args.Gobj.TTL
@@ -163,7 +163,7 @@ func (cache *LRUCache) Put(args request.CacheRequest) response.CacheResponse {
 	return response.NewResponseFromMessage(STORED, 1)
 }
 
-func deleteFromHashtable(cache *LRUCache, key string) {
+func deleteFromHashtable(cache *Cache, key string) {
 	cache.Mux.Lock()
 	defer cache.Mux.Unlock()
 	delete(cache.Hashtable, key)
@@ -173,7 +173,7 @@ func deleteFromHashtable(cache *LRUCache, key string) {
 // does not exist already. It will not evict a key/value pair
 // from the cache. If the cache is full, the key/value pair does
 // not get added.
-func (cache *LRUCache) Add(args request.CacheRequest) response.CacheResponse {
+func (cache *Cache) Add(args request.CacheRequest) response.CacheResponse {
 	key := args.Gobj.Key
 	value := args.Gobj.Value
 	ttl := args.Gobj.TTL
@@ -210,7 +210,7 @@ func (cache *LRUCache) Add(args request.CacheRequest) response.CacheResponse {
 
 // Delete removes a key/value pair from the cache
 // Returns NOT_FOUND if the key does not exist.
-func (cache *LRUCache) Delete(args request.CacheRequest) response.CacheResponse {
+func (cache *Cache) Delete(args request.CacheRequest) response.CacheResponse {
 	key := args.Gobj.Key
 
 	cache.Mux.Lock()
@@ -242,7 +242,7 @@ func (cache *LRUCache) Delete(args request.CacheRequest) response.CacheResponse 
 }
 
 // Flush removes all key/value pairs from the cache even if they have not expired
-func (cache *LRUCache) Flush(args request.CacheRequest) response.CacheResponse {
+func (cache *Cache) Flush(args request.CacheRequest) response.CacheResponse {
 	log.Println("ARGS", args)
 	for k := range cache.Hashtable {
 		n, _ := RemoveLast(cache.DLL)
@@ -264,14 +264,14 @@ func (cache *LRUCache) Flush(args request.CacheRequest) response.CacheResponse {
 }
 
 // CountKeys return the number of keys in the cache
-func (cache *LRUCache) CountKeys(args request.CacheRequest) response.CacheResponse {
+func (cache *Cache) CountKeys(args request.CacheRequest) response.CacheResponse {
 	return response.NewResponseFromValue(cache.Count)
 }
 
 // DeleteByKey functions the same as Delete, however it is used in various locations
 // to reduce the cost of allocating request objects for internal deletion mechanisms
 // e.g. the cache crawlers.
-func (cache *LRUCache) DeleteByKey(key string) response.CacheResponse {
+func (cache *Cache) DeleteByKey(key string) response.CacheResponse {
 	cache.Mux.Lock()
 	_, ok := cache.Hashtable[key]
 	cache.Mux.Unlock()
@@ -301,17 +301,17 @@ func (cache *LRUCache) DeleteByKey(key string) response.CacheResponse {
 	return response.NewResponseFromMessage(NotFound, 0)
 }
 
-func (cache *LRUCache) GetHashtableReference() *map[string]*Node {
+func (cache *Cache) GetHashtableReference() *map[string]*Node {
 	return &cache.Hashtable
 }
 
-func insertIntoHashtable(cache *LRUCache, key string, node *Node) {
+func insertIntoHashtable(cache *Cache, key string, node *Node) {
 	cache.Mux.Lock()
 	defer cache.Mux.Unlock()
 	cache.Hashtable[key] = node
 }
 
-func keyInCache(cache *LRUCache, key string) bool {
+func keyInCache(cache *Cache, key string) bool {
 	cache.Mux.Lock()
 	defer cache.Mux.Unlock()
 	_, ok := cache.Hashtable[key]
