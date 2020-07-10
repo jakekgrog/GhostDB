@@ -147,7 +147,7 @@ func writeToCachePutParallel(b *testing.B) {
 		for pb.Next() {
 
 			cache.Put(request.NewRequestFromValues(fmt.Sprintf("key-%d-%d", id, counter), fmt.Sprintf("value-%d-%d", counter, id), -1))
-			counter = counter + 1
+			counter++
 		}
 	})
 }
@@ -166,7 +166,7 @@ func writeToCacheAddParallel(b *testing.B) {
 		b.ReportAllocs()
 		for pb.Next() {
 			cache.Add(request.NewRequestFromValues(fmt.Sprintf("key-%d-%d", id, counter), fmt.Sprintf("value-%d-%d", counter, id), -1))
-			counter = counter + 1
+			counter++
 		}
 	})
 }
@@ -192,7 +192,7 @@ func getFromCacheParallel(b *testing.B) {
 		b.ReportAllocs()
 		for pb.Next() {
 			cache.Get(request.NewRequestFromValues(fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i), -1))
-			i = i + 1
+			i++
 		}
 	})
 }
@@ -218,7 +218,7 @@ func deleteFromCacheParallel(b *testing.B) {
 		b.ReportAllocs()
 		for pb.Next() {
 			cache.Delete(request.NewRequestFromValues(fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i), -1))
-			i = i + 1
+			i++
 		}
 	})
 }
