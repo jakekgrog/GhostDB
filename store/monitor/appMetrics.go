@@ -365,7 +365,10 @@ func GetAppMetrics() response.CacheResponse {
 	for scanner.Scan() {
 		var entry ReadAppMetrics
 		line := scanner.Text()
-		json.Unmarshal([]byte(line), &entry)
+		err := json.Unmarshal([]byte(line), &entry)
+		if err != nil{
+			log.Println(err)
+		}
 		entries = append(entries, entry)
 	}
 

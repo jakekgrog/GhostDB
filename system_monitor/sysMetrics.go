@@ -271,7 +271,10 @@ func GetSysMetrics() response.CacheResponse {
 	for scanner.Scan() {
 		var entry SysMetrics
 		line := scanner.Text()
-		json.Unmarshal([]byte(line), &entry)
+		err := json.Unmarshal([]byte(line), &entry)
+		if err != nil{
+			log.Println(err)
+		}
 		data = append(data, entry)
 	}
 
