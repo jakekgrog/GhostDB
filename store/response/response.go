@@ -37,7 +37,7 @@ import (
 )
 
 const (
-	INVALID_COMMAND_ERR = "INVALID_COMMAND_ERR"
+	InvalidCommandErr = "INVALID_COMMAND_ERR"
 )
 
 type CacheResponse struct {
@@ -85,7 +85,7 @@ func BadCommandResponse(cmd string) CacheResponse {
 		Gobj:    object.NewEmptyCacheObject(),
 		Status:  0,
 		Message: fmt.Sprintf("Command '%s' is not a recognized command", cmd),
-		Error:   INVALID_COMMAND_ERR,
+		Error:   InvalidCommandErr,
 	}
 }
 

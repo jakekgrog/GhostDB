@@ -163,33 +163,33 @@ func NewAppMetrics(writeInterval time.Duration, entryTimestamp bool) *AppMetrics
 
 func WriteMetrics(appMetrics *AppMetrics, cmd string, resp response.CacheResponse) {
 	switch cmd {
-	case constants.STORE_GET:
+	case constants.StoreGet:
 		GetHit(appMetrics)
 		if resp.Status != 1 {
 			CacheMiss(appMetrics)
 		}
-	case constants.STORE_PUT:
+	case constants.StorePut:
 		PutHit(appMetrics)
 		if resp.Status != 1 {
 			NotStored(appMetrics)
 		} else {
 			Stored(appMetrics)
 		}
-	case constants.STORE_ADD:
+	case constants.StoreAdd:
 		AddHit(appMetrics)
 		if resp.Status != 1 {
 			NotStored(appMetrics)
 		} else {
 			Stored(appMetrics)
 		}
-	case constants.STORE_DELETE:
+	case constants.StoreDelete:
 		DeleteHit(appMetrics)
 		if resp.Status != 1 {
 			NotFound(appMetrics)
 		} else {
 			Removed(appMetrics)
 		}
-	case constants.STORE_FLUSH:
+	case constants.StoreFlush:
 		FlushHit(appMetrics)
 		if resp.Status != 1 {
 			ErrFlush(appMetrics)
