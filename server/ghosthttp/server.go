@@ -96,7 +96,7 @@ func Router() {
 		}
 	}
 	err := fasthttp.ListenAndServe(":7991", routes)
-	if err != nil{
+	if err != nil {
 		log.Fatal(err)
 	}
 }

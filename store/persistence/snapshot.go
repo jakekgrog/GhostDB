@@ -77,7 +77,7 @@ func createLruSnapshot(cache *lru.Cache, encryption bool, passphrase ...string) 
 	f, err := os.OpenFile(snapshotPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		f, err = os.Create(snapshotPath)
-		if err != nil{
+		if err != nil {
 			log.Printf("failed to create snapshot file: %s", err.Error())
 		}
 	}
