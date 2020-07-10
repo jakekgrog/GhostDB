@@ -43,15 +43,15 @@ import (
 )
 
 var (
-	GHOST_GET         = "/get"
-	GHOST_PUT         = "/put"
-	GHOST_ADD         = "/add"
-	GHOST_DELETE      = "/delete"
-	GHOST_FLUSH       = "/flush"
-	GHOST_SYS_METRICS = "/getSysMetrics"
-	GHOST_APP_METRICS = "/getAppMetrics"
-	GHOST_PING        = "/ping"
-	GHOST_NODE_SIZE   = "/nodeSize"
+	GhostGet        = "/get"
+	GhostPut        = "/put"
+	GhostAdd        = "/add"
+	GhostDelete     = "/delete"
+	GhostFlush      = "/flush"
+	GhostSysMetrics = "/getSysMetrics"
+	GhostAppMetrics = "/getAppMetrics"
+	GhostPing       = "/ping"
+	GhostNodeSize   = "/nodeSize"
 )
 
 var store *base.Store
