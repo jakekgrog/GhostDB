@@ -317,8 +317,5 @@ func keyInCache(cache *LRUCache, key string) bool {
 	cache.Mux.Lock()
 	defer cache.Mux.Unlock()
 	_, ok := cache.Hashtable[key]
-	if ok {
-		return true
-	}
-	return false
+	return ok
 }
