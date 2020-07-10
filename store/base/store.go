@@ -46,22 +46,22 @@ import (
 
 // LRU store commands
 const (
-	STORE_GET         = "get"
-	STORE_PUT         = "put"
-	STORE_ADD         = "add"
-	STORE_DELETE      = "delete"
-	STORE_FLUSH       = "flush"
-	STORE_NODE_SIZE   = "nodeSize"
-	STORE_APP_METRICS = "getAppMetrics"
+	StoreGet        = "get"
+	StorePut        = "put"
+	StoreAdd        = "add"
+	StoreDelete     = "delete"
+	StoreFlush      = "flush"
+	StoreNodeSize   = "nodeSize"
+	StoreAppMetrics = "getAppMetrics"
 )
 
 // Policy types
 const (
-	LRU_TYPE  = "LRU"  // Least recently used
-	LFU_TYPE  = "LFU"  // Least frequenty used
-	MRU_TYPE  = "MRU"  // Most recently used
-	ARC_TYPE  = "ARC"  // Adaptive Replacement Cache
-	TLRU_TYPE = "TLRU" // Time-aware Least Recently Used
+	LruType  = "LRU"  // Least recently used
+	LfuType  = "LFU"  // Least frequenty used
+	MruType  = "MRU"  // Most recently used
+	ArcType  = "ARC"  // Adaptive Replacement Cache
+	TlruType = "TLRU" // Time-aware Least Recently Used
 )
 
 type HandlerType func(request.CacheRequest) response.CacheResponse
@@ -127,10 +127,10 @@ func writeAof(cmd string, args *request.CacheRequest) {
 
 func isWriteOp(cmd string) bool {
 	writeOps := map[string]bool{
-		STORE_ADD:    true,
-		STORE_PUT:    true,
-		STORE_DELETE: true,
-		STORE_FLUSH:  true,
+		StoreAdd:    true,
+		StorePut:    true,
+		StoreDelete: true,
+		StoreFlush:  true,
 	}
 	return writeOps[cmd]
 }
@@ -155,12 +155,12 @@ func (store *Store) BuildStore(conf config.Configuration) {
 
 func (baseStore *Store) registerHandlers() map[string]interface{} {
 	return map[string]interface{}{
-		STORE_GET:       baseStore.Cache.Get,
-		STORE_PUT:       baseStore.Cache.Put,
-		STORE_ADD:       baseStore.Cache.Add,
-		STORE_DELETE:    baseStore.Cache.Delete,
-		STORE_FLUSH:     baseStore.Cache.Flush,
-		STORE_NODE_SIZE: baseStore.Cache.CountKeys,
+		StoreGet:      baseStore.Cache.Get,
+		StorePut:      baseStore.Cache.Put,
+		StoreAdd:      baseStore.Cache.Add,
+		StoreDelete:   baseStore.Cache.Delete,
+		StoreFlush:    baseStore.Cache.Flush,
+		StoreNodeSize: baseStore.Cache.CountKeys,
 	}
 }
 
@@ -197,7 +197,7 @@ func (store *Store) StopStore() {
 
 func (store *Store) newCacheFromPolicy(policy string) cache.Cache {
 	switch policy {
-	case LRU_TYPE:
+	case LruType:
 		return lru.NewLRU(store.Conf)
 	default:
 		return nil
