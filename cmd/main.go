@@ -42,7 +42,7 @@ import (
 	"github.com/ghostdb/ghostdb-cache-node/store/base"
 	"github.com/ghostdb/ghostdb-cache-node/store/monitor"
 	"github.com/ghostdb/ghostdb-cache-node/store/persistence"
-	"github.com/ghostdb/ghostdb-cache-node/system_monitor"
+	"github.com/ghostdb/ghostdb-cache-node/systemMonitor"
 )
 
 // Node configuration file
@@ -52,7 +52,7 @@ var conf config.Configuration
 var store *base.Store
 
 // Schedulers
-var sysMetricsScheduler *system_monitor.SysMetricsScheduler
+var sysMetricsScheduler *systemMonitor.SysMetricsScheduler
 
 func init() {
 	conf = config.InitializeConfiguration()
@@ -67,7 +67,7 @@ func init() {
 	}
 
 	// Create sysMetrics and appMetrics logfiles if they do not exist
-	sysMetricsFile, err := os.OpenFile(configPath+system_monitor.SysMetricsLogFilename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o777)
+	sysMetricsFile, err := os.OpenFile(configPath+systemMonitor.SysMetricsLogFilename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o777)
 	if err != nil {
 		log.Fatalf("Failed to create or read sysMetrics log file: %s", err.Error())
 		panic(err)
@@ -107,11 +107,11 @@ func init() {
 
 	store.RunStore()
 
-	sysMetricsScheduler = system_monitor.NewSysMetricsScheduler(conf.SysMetricInterval)
+	sysMetricsScheduler = systemMonitor.NewSysMetricsScheduler(conf.SysMetricInterval)
 }
 
 func main() {
-	go system_monitor.StartSysMetrics(sysMetricsScheduler)
+	go systemMonitor.StartSysMetrics(sysMetricsScheduler)
 	log.Println("successfully started sysMetrics monitor...")
 	ghost_http.NodeConfig(store)
 	log.Println("successfully started GhostDB Node server...")

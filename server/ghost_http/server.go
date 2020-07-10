@@ -38,7 +38,7 @@ import (
 	"github.com/ghostdb/ghostdb-cache-node/store/base"
 	"github.com/ghostdb/ghostdb-cache-node/store/request"
 	"github.com/ghostdb/ghostdb-cache-node/store/response"
-	"github.com/ghostdb/ghostdb-cache-node/system_monitor"
+	"github.com/ghostdb/ghostdb-cache-node/systemMonitor"
 	"github.com/valyala/fasthttp"
 )
 
@@ -81,7 +81,7 @@ func Router() {
 		var res response.CacheResponse
 		// Handle SysMet
 		if cmd == "getSysMetrics" {
-			res = system_monitor.GetSysMetrics()
+			res = systemMonitor.GetSysMetrics()
 		} else if cmd == "ping" {
 			res = response.NewPingResponse()
 		} else {
