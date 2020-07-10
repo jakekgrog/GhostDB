@@ -1,21 +1,21 @@
 /*
  * Copyright (c) 2020, Jake Grogan
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *  * Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
- * 
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  *  * Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,7 +26,7 @@
  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+ */
 
 package persistence
 
@@ -45,9 +45,9 @@ import (
 	"os"
 	// "time"
 
-	"github.com/ghostdb/ghostdb-cache-node/store/lru"
-	"github.com/ghostdb/ghostdb-cache-node/store/cache"
 	"github.com/ghostdb/ghostdb-cache-node/config"
+	"github.com/ghostdb/ghostdb-cache-node/store/cache"
+	"github.com/ghostdb/ghostdb-cache-node/store/lru"
 )
 
 const (
@@ -73,7 +73,7 @@ func createLruSnapshot(cache *lru.LRUCache, encryption bool, passphrase ...strin
 		os.Remove(snapshotPath)
 	}
 
-	f, err := os.OpenFile(snapshotPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(snapshotPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		f, err = os.Create(snapshotPath)
 	}
@@ -105,7 +105,6 @@ func GetSnapshotFilename() string {
 	return SNAPSHOT_FILENAME
 }
 
-
 // BuildCache rebuilds the cache from the byte stream of the snapshot
 func BuildCacheFromSnapshot(bs *[]byte) (lru.LRUCache, error) {
 	// Create a new cache instance.
@@ -113,7 +112,6 @@ func BuildCacheFromSnapshot(bs *[]byte) (lru.LRUCache, error) {
 
 	// Unmarshal the byte stream and update the new cache object with the result.
 	err := json.Unmarshal(*bs, &cache)
-	
 	if err != nil {
 		log.Fatalf("failed to rebuild cache from snapshot: %s", err.Error())
 	}
@@ -121,7 +119,7 @@ func BuildCacheFromSnapshot(bs *[]byte) (lru.LRUCache, error) {
 	// Create a new doubly linked list object
 	ll := lru.InitList()
 
-	// Populate the caches hashtable and doubly linked list with the values 
+	// Populate the caches hashtable and doubly linked list with the values
 	// from the unmarshalled byte stream
 	for _, v := range cache.Hashtable {
 		n, err := lru.Insert(ll, v.Key, v.Value, v.TTL)
@@ -139,7 +137,6 @@ func BuildCacheFromSnapshot(bs *[]byte) (lru.LRUCache, error) {
 // ReadSnapshot reads the compressed snapshot file into
 // buffer and returns a reference to the buffer
 func ReadSnapshot(encryption bool, passphrase ...string) *[]byte {
-
 	configPath, _ := os.UserConfigDir()
 	snap, err := os.Open(configPath + SNAPSHOT_FILENAME)
 	if err != nil {
@@ -149,7 +146,6 @@ func ReadSnapshot(encryption bool, passphrase ...string) *[]byte {
 	defer snap.Close()
 
 	file, err := gzip.NewReader(snap)
-
 	if err != nil {
 		log.Fatalf("failed to create gzip reader: %s", err.Error())
 	}
@@ -202,7 +198,7 @@ func DecryptData(data []byte, passphrase string) ([]byte, error) {
 	nonceSize := gcm.NonceSize()
 	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
 
-	// Decrypt and authenticate the ciphertext. Authenticate the 
+	// Decrypt and authenticate the ciphertext. Authenticate the
 	// additional data and if successful, append the resulting data
 	// to the destination. The nonce must be NonceSize() bytes long
 	// and both it and the additional data must match the value passed

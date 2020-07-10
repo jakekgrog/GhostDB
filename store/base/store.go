@@ -1,21 +1,21 @@
 /*
  * Copyright (c) 2020, Jake Grogan
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *  * Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
- * 
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  *  * Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,41 +26,41 @@
  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+ */
 
 package base
 
 import (
 	"log"
 	"time"
-	
-	"github.com/ghostdb/ghostdb-cache-node/store/cache"
-	"github.com/ghostdb/ghostdb-cache-node/store/lru"
-	"github.com/ghostdb/ghostdb-cache-node/store/crawlers"
-	"github.com/ghostdb/ghostdb-cache-node/store/persistence"
+
 	"github.com/ghostdb/ghostdb-cache-node/config"
+	"github.com/ghostdb/ghostdb-cache-node/store/cache"
+	"github.com/ghostdb/ghostdb-cache-node/store/crawlers"
+	"github.com/ghostdb/ghostdb-cache-node/store/lru"
+	"github.com/ghostdb/ghostdb-cache-node/store/monitor"
+	"github.com/ghostdb/ghostdb-cache-node/store/persistence"
 	"github.com/ghostdb/ghostdb-cache-node/store/request"
 	"github.com/ghostdb/ghostdb-cache-node/store/response"
-	"github.com/ghostdb/ghostdb-cache-node/store/monitor"
 )
 
 // LRU store commands
 const (
-	STORE_GET = "get"
-	STORE_PUT = "put"
-	STORE_ADD = "add"
-	STORE_DELETE = "delete"
-	STORE_FLUSH = "flush"
-	STORE_NODE_SIZE = "nodeSize"
+	STORE_GET         = "get"
+	STORE_PUT         = "put"
+	STORE_ADD         = "add"
+	STORE_DELETE      = "delete"
+	STORE_FLUSH       = "flush"
+	STORE_NODE_SIZE   = "nodeSize"
 	STORE_APP_METRICS = "getAppMetrics"
 )
 
 // Policy types
 const (
-	LRU_TYPE = "LRU"   // Least recently used
-	LFU_TYPE = "LFU"   // Least frequenty used
-	MRU_TYPE = "MRU"   // Most recently used
-	ARC_TYPE = "ARC"   // Adaptive Replacement Cache
+	LRU_TYPE  = "LRU"  // Least recently used
+	LFU_TYPE  = "LFU"  // Least frequenty used
+	MRU_TYPE  = "MRU"  // Most recently used
+	ARC_TYPE  = "ARC"  // Adaptive Replacement Cache
 	TLRU_TYPE = "TLRU" // Time-aware Least Recently Used
 )
 
@@ -84,13 +84,13 @@ type BaseStore interface {
 }
 
 type Store struct {
-	Conf   config.Configuration
-	policy   string
-	Cache    cache.Cache
-	commands map[string]interface{}
-	crawlerScheduler *crawlers.CrawlerScheduler
+	Conf              config.Configuration
+	policy            string
+	Cache             cache.Cache
+	commands          map[string]interface{}
+	crawlerScheduler  *crawlers.CrawlerScheduler
 	snapshotScheduler *persistence.SnapshotScheduler
-	appMetrics *monitor.AppMetrics
+	appMetrics        *monitor.AppMetrics
 }
 
 func NewStore(policy string) *Store {
@@ -120,17 +120,17 @@ func (store *Store) Execute(cmd string, args request.CacheRequest) response.Cach
 
 func writeAof(cmd string, args *request.CacheRequest) {
 	if isWriteOp(cmd) {
-		var gobj = args.Gobj
+		gobj := args.Gobj
 		persistence.WriteBuffer(cmd, gobj.Key, gobj.Value, gobj.TTL)
 	}
 }
 
 func isWriteOp(cmd string) bool {
-	writeOps := map[string]bool {
-		STORE_ADD: true,
-		STORE_PUT: true,
+	writeOps := map[string]bool{
+		STORE_ADD:    true,
+		STORE_PUT:    true,
 		STORE_DELETE: true,
-		STORE_FLUSH: true,
+		STORE_FLUSH:  true,
 	}
 	return writeOps[cmd]
 }
@@ -154,12 +154,12 @@ func (store *Store) BuildStore(conf config.Configuration) {
 }
 
 func (baseStore *Store) registerHandlers() map[string]interface{} {
-	return map[string]interface{} {
-		STORE_GET: baseStore.Cache.Get,
-		STORE_PUT: baseStore.Cache.Put,
-		STORE_ADD: baseStore.Cache.Add,
-		STORE_DELETE: baseStore.Cache.Delete,
-		STORE_FLUSH: baseStore.Cache.Flush,
+	return map[string]interface{}{
+		STORE_GET:       baseStore.Cache.Get,
+		STORE_PUT:       baseStore.Cache.Put,
+		STORE_ADD:       baseStore.Cache.Add,
+		STORE_DELETE:    baseStore.Cache.Delete,
+		STORE_FLUSH:     baseStore.Cache.Flush,
 		STORE_NODE_SIZE: baseStore.Cache.CountKeys,
 	}
 }

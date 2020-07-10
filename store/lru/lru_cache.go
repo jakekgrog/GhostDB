@@ -1,21 +1,21 @@
 /*
  * Copyright (c) 2020, Jake Grogan
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *  * Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
- * 
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  *  * Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,7 +26,7 @@
  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+ */
 
 package lru
 
@@ -54,23 +54,23 @@ const (
 type LRUCache struct {
 	// Size represents the maximum number of allowable
 	// key-value pairs in the cache.
-	Size      int32
+	Size int32
 
 	// Count records the number of key-value pairs
 	// currently in the cache.
-	Count     int32
+	Count int32
 
 	// Full tracks if Count is equal to Size
-	Full      bool
+	Full bool
 
 	// DLL is a doubly linked list containing all key-value pairs
-	DLL       *List `json:"omitempty"`
+	DLL *List `json:"omitempty"`
 
 	// Hashtable maps to nodes in the doubly linked list
 	Hashtable map[string]*Node
-	
+
 	// Mux is a mutex lock
-	Mux       sync.Mutex
+	Mux sync.Mutex
 }
 
 // NewLRU will initialize the cache
@@ -91,7 +91,7 @@ func newHashtable() map[string]*Node {
 // Get will fetch a key/value pair from the cache
 func (cache *LRUCache) Get(args request.CacheRequest) response.CacheResponse {
 	// Fix in the FUTURE
-	// to use a method that validates the 
+	// to use a method that validates the
 	// request object for this method.
 	key := args.Gobj.Key
 
@@ -149,7 +149,7 @@ func (cache *LRUCache) Put(args request.CacheRequest) response.CacheResponse {
 		if inCache {
 			// Get the value node
 			node, _ := cache.Hashtable[key]
-	
+
 			// Update the value
 			node.Value = value
 			return response.NewResponseFromMessage(STORED, 1)
@@ -213,7 +213,6 @@ func (cache *LRUCache) Add(args request.CacheRequest) response.CacheResponse {
 // Delete removes a key/value pair from the cache
 // Returns NOT_FOUND if the key does not exist.
 func (cache *LRUCache) Delete(args request.CacheRequest) response.CacheResponse {
-
 	key := args.Gobj.Key
 
 	cache.Mux.Lock()
@@ -230,7 +229,6 @@ func (cache *LRUCache) Delete(args request.CacheRequest) response.CacheResponse 
 
 		deleteFromHashtable(cache, nodeToRemove.Key)
 		_, err := RemoveNode(cache.DLL, nodeToRemove)
-
 		if err != nil {
 			log.Println("failed to remove key-value pair")
 		}
@@ -260,7 +258,7 @@ func (cache *LRUCache) Flush(args request.CacheRequest) response.CacheResponse {
 	}
 
 	cache.Full = false
-	
+
 	if cache.Count == int32(0) {
 		return response.NewResponseFromMessage(FLUSHED, 1)
 	}
@@ -273,7 +271,7 @@ func (cache *LRUCache) CountKeys(args request.CacheRequest) response.CacheRespon
 }
 
 // DeleteByKey functions the same as Delete, however it is used in various locations
-// to reduce the cost of allocating request objects for internal deletion mechanisms 
+// to reduce the cost of allocating request objects for internal deletion mechanisms
 // e.g. the cache crawlers.
 func (cache *LRUCache) DeleteByKey(key string) response.CacheResponse {
 	cache.Mux.Lock()
@@ -290,7 +288,6 @@ func (cache *LRUCache) DeleteByKey(key string) response.CacheResponse {
 
 		deleteFromHashtable(cache, nodeToRemove.Key)
 		_, err := RemoveNode(cache.DLL, nodeToRemove)
-
 		if err != nil {
 			log.Println("failed to remove key-value pair")
 		}
@@ -316,10 +313,10 @@ func insertIntoHashtable(cache *LRUCache, key string, node *Node) {
 	cache.Hashtable[key] = node
 }
 
-func keyInCache(cache *LRUCache, key string) (bool) {
+func keyInCache(cache *LRUCache, key string) bool {
 	cache.Mux.Lock()
 	defer cache.Mux.Unlock()
-	_, ok := cache.Hashtable[key] 
+	_, ok := cache.Hashtable[key]
 	if ok {
 		return true
 	}

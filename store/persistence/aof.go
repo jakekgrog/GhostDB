@@ -1,21 +1,21 @@
 /*
  * Copyright (c) 2020, Jake Grogan
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *  * Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
- * 
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  *  * Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,32 +26,34 @@
  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+ */
 
 package persistence
 
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"time"
-	"encoding/json"
-	"strconv"
 
-	"github.com/ghostdb/ghostdb-cache-node/store/request"
 	"github.com/ghostdb/ghostdb-cache-node/store/cache"
+	"github.com/ghostdb/ghostdb-cache-node/store/request"
 )
 
 var buffer bytes.Buffer
 
 var configPath string
 
-const logFile = "/ghostDBPersistence.log"
-const tempLog = "/temp_ghostDBPersistence.log"
-const writeInterval = 1
+const (
+	logFile       = "/ghostDBPersistence.log"
+	tempLog       = "/temp_ghostDBPersistence.log"
+	writeInterval = 1
+)
 
 var tmpBuffer bytes.Buffer
 
@@ -123,7 +125,7 @@ func flushBuffer(cache *cache.Cache, maxAOFSize int64) {
 }
 
 func appendBufferContent(dualWrite bool) {
-	file, err := os.OpenFile(configPath+logFile, os.O_APPEND|os.O_WRONLY, 0600)
+	file, err := os.OpenFile(configPath+logFile, os.O_APPEND|os.O_WRONLY, 0o600)
 	if err != nil {
 		log.Fatalf("failed to write to AOF log file: %s", err.Error())
 	}
@@ -144,7 +146,7 @@ func reduceAOF(cache *cache.Cache) {
 		entry := fmt.Sprintf(`{"Time":"%s", "Verb":"add", "Key":"%s", "Value":"%s", "TTL":"%d"}`+"\n", timeStamp, k, v.Value, v.TTL)
 		tmpBuffer.WriteString(entry)
 	}
-	file, err := os.OpenFile(configPath+tempLog, os.O_APPEND|os.O_WRONLY, 0600)
+	file, err := os.OpenFile(configPath+tempLog, os.O_APPEND|os.O_WRONLY, 0o600)
 	if err != nil {
 		log.Fatalf("failed to create temporary AOF log file for AOF reduction: %s", err.Error())
 	}
@@ -163,7 +165,6 @@ func GetAOFSize() int64 {
 	}
 	return file.Size()
 }
-
 
 // WriteBuffer writes cache command in log format
 func WriteBuffer(verb string, key string, value interface{}, ttl int64) {
@@ -190,15 +191,15 @@ func FlushBuffer() {
 	buffer.Reset()
 }
 
-//BuildCache parses a pre-existing AOF
-//rebuilds cache using contents
+// BuildCache parses a pre-existing AOF
+// rebuilds cache using contents
 func BuildCacheFromAof(cache *cache.Cache, logPath string) {
 	file, err := os.Open(logPath)
 	if err != nil {
 		log.Fatalf("failed to open AOF log file: %s", err.Error())
 	}
 	scanner := bufio.NewScanner(file)
-	scanner.Scan() //Ignore creation date
+	scanner.Scan() // Ignore creation date
 	for scanner.Scan() {
 		var lf logFormat
 		aofEntry := []byte(scanner.Text())

@@ -58,7 +58,7 @@ func Rotate(filename string, tmpFilename string) (int64, error) {
 	defer source.Close()
 
 	// Open the tmp log (or create if it doesn't exist)
-	dst, err := os.OpenFile(tmp, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	dst, err := os.OpenFile(tmp, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return 0, fmt.Errorf("failed to open %s temporary log file", tmp)
 	}
@@ -66,7 +66,6 @@ func Rotate(filename string, tmpFilename string) (int64, error) {
 
 	// Copy the contents of main log to tmp log
 	nBytes, err := io.Copy(dst, source)
-
 	if err != nil {
 		return 0, fmt.Errorf("failed to copy log to temp log")
 	}
@@ -83,7 +82,7 @@ func Rotate(filename string, tmpFilename string) (int64, error) {
 
 func tmpFileExists(tmpFilename string) (bool, error) {
 	if _, err := os.Stat(tmpFilename); os.IsNotExist(err) {
-		dst, err := os.OpenFile(tmpFilename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		dst, err := os.OpenFile(tmpFilename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 		if err != nil {
 			return false, fmt.Errorf("failed to open %s temporary log file", tmpFilename)
 		}
@@ -94,12 +93,11 @@ func tmpFileExists(tmpFilename string) (bool, error) {
 
 func cleanFile(filePath string) (bool, error) {
 	err := os.Remove(filePath)
-
 	if err != nil {
 		return false, err
 	}
 
-	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return false, err
 	}
