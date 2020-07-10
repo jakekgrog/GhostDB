@@ -232,7 +232,7 @@ func BuildCacheFromAof(cache *cache.Cache, logPath string) {
 	}
 }
 
-func logEntryToCacheRequest(logEntry *logFormat) request.CacheRequest {
-	n, _ := strconv.ParseInt(logEntry.TTL, 10, 64)
-	return request.NewRequestFromValues(logEntry.Key, logEntry.Value, n)
-}
+//func logEntryToCacheRequest(logEntry *logFormat) request.CacheRequest {
+//	n, _ := strconv.ParseInt(logEntry.TTL, 10, 64)
+//	return request.NewRequestFromValues(logEntry.Key, logEntry.Value, n)
+//}
