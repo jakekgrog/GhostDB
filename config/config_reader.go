@@ -41,7 +41,7 @@ const (
 	DefaultKeyspaceSize      = 65536
 	DefaultSysMetricInterval = 300  // 5 minutes
 	DefaultAppMetricInterval = 300  // 5 minutes
-	DefaultTtl               = -1   // Never Expire
+	DefaultTTL               = -1   // Never Expire
 	DefaultCrawlerInterval   = 300  // 5 minutes
 	DefaultSnapshotInterval  = 3600 // 1 hour
 	DefaultSnapshotEnabled   = true
@@ -123,7 +123,7 @@ func (conf *Configuration) SetDefaultParams() {
 	conf.KeyspaceSize = DefaultKeyspaceSize
 	conf.SysMetricInterval = DefaultSysMetricInterval
 	conf.AppMetricInterval = DefaultAppMetricInterval
-	conf.DefaultTTL = DefaultTtl
+	conf.DefaultTTL = DefaultTTL
 	conf.CrawlerInterval = DefaultCrawlerInterval
 	conf.SnapshotInterval = DefaultSnapshotInterval
 	conf.SnapshotEnabled = DefaultSnapshotEnabled
