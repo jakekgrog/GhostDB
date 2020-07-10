@@ -153,17 +153,16 @@ func RemoveLast(ll *List) (*Node, error) {
 
 	if ll.Size == 0 {
 		return nil, errors.New("List is empty")
-	} else {
-		// Update reference pointers
-		nodeToRemove := ll.Tail.Prev
-
-		nodeToRemove.Prev.Next = ll.Tail
-		ll.Tail.Prev = nodeToRemove.Prev
-
-		atomic.AddInt32(&ll.Size, -1)
-
-		return nodeToRemove, nil
 	}
+	// Update reference pointers
+	nodeToRemove := ll.Tail.Prev
+
+	nodeToRemove.Prev.Next = ll.Tail
+	ll.Tail.Prev = nodeToRemove.Prev
+
+	atomic.AddInt32(&ll.Size, -1)
+
+	return nodeToRemove, nil
 }
 
 // RemoveNode removes a specific node from the list.

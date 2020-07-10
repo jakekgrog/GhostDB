@@ -162,9 +162,8 @@ func ReadSnapshot(encryption bool, passphrase ...string) *[]byte {
 			log.Fatalf("failed to decrypt snapshot: %s", err.Error())
 		}
 		return &serializedData
-	} else {
-		return &byteStream
 	}
+	return &byteStream
 }
 
 // EncryptData is our encryption client to encrypt the serialized
