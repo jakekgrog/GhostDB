@@ -86,6 +86,4 @@ func TestAppMetrics(t *testing.T) {
 	metrics := scanner.Text()
 	expectedOutput := `{"TotalHits": 12, "TotalGets": 3, "CacheMiss": 1, "TotalPuts": 2, "TotalAdds": 3, "NotStored": 0, "TotalDeletes": 2, "NotFound": 1, "TotalFlushes": 2, "ErrFlush": 2}`
 	utils.AssertEqual(t, metrics, expectedOutput, "")
-
-	return
 }

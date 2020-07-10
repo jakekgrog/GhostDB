@@ -40,7 +40,6 @@ import (
 func StartCrawl(cache *lru.LRUCache) {
 	markedKeys := mark(cache)
 	sweep(cache, markedKeys)
-	return
 }
 
 // Traverse the cache and mark key-value pair nodes
@@ -78,5 +77,4 @@ func sweep(cache *lru.LRUCache, keys []string) {
 	for _, key := range keys {
 		cache.DeleteByKey(key)
 	}
-	return
 }
