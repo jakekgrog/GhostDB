@@ -41,8 +41,7 @@ import (
 func TestStore(t *testing.T) {
 	conf := config.InitializeConfiguration()
 
-	var store *Store
-	store = NewStore("LRU")
+	store := NewStore("LRU")
 	store.BuildStore(conf)
 	store.RunStore()
 
