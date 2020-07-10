@@ -46,8 +46,7 @@ import (
 func TestAppMetrics(t *testing.T) {
 	var config config.Configuration = config.InitializeConfiguration()
 
-	var store *Store
-	store = NewStore("LRU")
+	store := NewStore("LRU")
 	store.BuildStore(config)
 	store.RunStore()
 

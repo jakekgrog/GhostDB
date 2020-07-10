@@ -53,8 +53,7 @@ func TestAOF(t *testing.T) {
 		return
 	}
 
-	var store *Store
-	store = NewStore("LRU")
+	store := NewStore("LRU")
 	store.BuildStore(config)
 	store.RunStore()
 

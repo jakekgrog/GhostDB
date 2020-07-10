@@ -42,8 +42,7 @@ import (
 func TestSerializer(t *testing.T) {
 	var config config.Configuration = config.InitializeConfiguration()
 
-	var store *Store
-	store = NewStore("LRU")
+	store := NewStore("LRU")
 	store.BuildStore(config)
 
 	store.Execute("put", request.NewRequestFromValues("Italy", "Rome", -1))
