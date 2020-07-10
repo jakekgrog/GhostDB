@@ -240,6 +240,6 @@ func generateHash(passphrase string) string {
 	// the result.
 	hasher := md5.New()
 	hasher.Write([]byte(passphrase))
-	// Return the hash as a hexidecimal value.
+	// Return the hash as a hexadecimal value.
 	return hex.EncodeToString(hasher.Sum(nil))
 }

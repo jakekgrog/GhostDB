@@ -140,7 +140,7 @@ func (store *Store) CreateSnapshot() {
 	if err != nil {
 		log.Println("Failed to create PIT Snapshot of the stores cache!")
 	}
-	log.Println("Sucessfully created PIT Snapshot of the stores cache!")
+	log.Println("Successfully created PIT Snapshot of the stores cache!")
 }
 
 func (store *Store) BuildStore(conf config.Configuration) {
