@@ -142,7 +142,6 @@ func (cache *LRUCache) Put(args request.CacheRequest) response.CacheResponse {
 		if cache.Count == cache.Size {
 			cache.Full = true
 		}
-
 	} else {
 		// SPECIAL CASE: Just update the value
 		inCache := keyInCache(cache, key)

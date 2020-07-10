@@ -145,7 +145,6 @@ func writeToCachePutParallel(b *testing.B) {
 
 		b.ReportAllocs()
 		for pb.Next() {
-
 			cache.Put(request.NewRequestFromValues(fmt.Sprintf("key-%d-%d", id, counter), fmt.Sprintf("value-%d-%d", counter, id), -1))
 			counter++
 		}
