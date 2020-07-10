@@ -52,7 +52,7 @@ import (
 )
 
 const (
-	SNAPSHOT_FILENAME = "snapshot.gz"
+	snapshotFilename = "snapshot.gz"
 )
 
 func CreateSnapshot(cache *cache.Cache, config *config.Configuration) (bool, error) {
@@ -68,7 +68,7 @@ func createLruSnapshot(cache *lru.LRUCache, encryption bool, passphrase ...strin
 	serialized, _ := json.MarshalIndent(cache, "", " ")
 
 	configPath, _ := os.UserConfigDir()
-	snapshotPath := configPath + SNAPSHOT_FILENAME
+	snapshotPath := configPath + snapshotFilename
 
 	if _, err := os.Stat(snapshotPath); err == nil {
 		os.Remove(snapshotPath)
@@ -106,7 +106,7 @@ func createLruSnapshot(cache *lru.LRUCache, encryption bool, passphrase ...strin
 
 // GetSnapshotFilename builds the filename for the snapshot being taken
 func GetSnapshotFilename() string {
-	return SNAPSHOT_FILENAME
+	return snapshotFilename
 }
 
 // BuildCache rebuilds the cache from the byte stream of the snapshot
@@ -142,7 +142,7 @@ func BuildCacheFromSnapshot(bs *[]byte) (lru.LRUCache, error) {
 // buffer and returns a reference to the buffer
 func ReadSnapshot(encryption bool, passphrase ...string) *[]byte {
 	configPath, _ := os.UserConfigDir()
-	snap, err := os.Open(configPath + SNAPSHOT_FILENAME)
+	snap, err := os.Open(configPath + snapshotFilename)
 	if err != nil {
 		log.Fatalf("failed to open snapshot: %s", err.Error())
 	}
