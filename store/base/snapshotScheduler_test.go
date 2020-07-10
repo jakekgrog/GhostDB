@@ -42,8 +42,8 @@ import (
 func TestSnapshotScheduler(t *testing.T) {
 	var config config.Configuration = config.InitializeConfiguration()
 	config.SnapshotInterval = int32(5)
-	var store *Store
-	store = NewStore("LRU")
+
+	store := NewStore("LRU")
 	store.BuildStore(config)
 	store.RunStore()
 

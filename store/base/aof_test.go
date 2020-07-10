@@ -73,8 +73,7 @@ func TestAOF(t *testing.T) {
 		t.Error("AOF Size exceeded threshold")
 	}
 	// Simulate cache restart
-	var newStore *Store
-	newStore = NewStore("LRU")
+	newStore := NewStore("LRU")
 	newStore.BuildStore(config)
 	newStore.RunStore()
 

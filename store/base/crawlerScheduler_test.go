@@ -42,8 +42,8 @@ import (
 func TestCrawlerScheduler(t *testing.T) {
 	var conf config.Configuration = config.InitializeConfiguration()
 	conf.CrawlerInterval = 5
-	var store *Store
-	store = NewStore("LRU")
+
+	store := NewStore("LRU")
 	store.BuildStore(conf)
 	store.RunStore()
 
