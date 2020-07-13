@@ -1,21 +1,21 @@
 /*
  * Copyright (c) 2020, Jake Grogan
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *  * Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
- * 
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  *  * Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,9 +26,9 @@
  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+ */
 
-package system_monitor
+package systemmonitor
 
 import (
 	"bufio"
@@ -39,28 +39,28 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/ghostdb/ghostdb-cache-node/utils"
 	"github.com/ghostdb/ghostdb-cache-node/store/response"
+	"github.com/ghostdb/ghostdb-cache-node/utils"
 )
 
 const (
-	SysMetricsLogFilename = "/ghostdb/ghostdb_sys_metrics.log"
+	SysMetricsLogFilename  = "/ghostdb/ghostdb_sys_metrics.log"
 	SysMetricsTempFilename = "/ghostdb/ghostdb_sys_metrics_tmp.log"
-	MaxSysMetricsLogSize = 10000000
+	MaxSysMetricsLogSize   = 10000000
 )
 
 type SysMetrics struct {
-	Timestamp    string
+	Timestamp string
 
 	// Alloc is bytes of allocated heap objects.
-	Alloc        uint64
+	Alloc uint64
 
 	// TotalAlloc is cumulative bytes allocated for heap objects.
 	//
 	// TotalAlloc increases as heap objects are allocated, but
 	// unlike Alloc and HeapAlloc, it does not decrease when
 	// objects are freed.
-	TotalAlloc   uint64
+	TotalAlloc uint64
 
 	// Sys is the total bytes of memory obtained from the OS.
 	//
@@ -70,22 +70,22 @@ type SysMetrics struct {
 	// likely that not all of the virtual address space is backed
 	// by physical memory at any given moment, though in general
 	// it all was at some point.
-	Sys          uint64
+	Sys uint64
 
 	// Lookups is the number of pointer lookups performed by the
 	// runtime.
 	//
 	// This is primarily useful for debugging runtime internals.
-	Lookups      uint64
+	Lookups uint64
 
 	// Mallocs is the cumulative count of heap objects allocated.
-	Mallocs      uint64
+	Mallocs uint64
 
 	// Frees is the cumulative count of heap objects freed.
-	Frees        uint64
+	Frees uint64
 
 	// The number of live objects is Mallocs - Frees.
-	LiveObjects  uint64
+	LiveObjects uint64
 
 	// HeapAlloc is bytes of allocated heap objects.
 	//
@@ -98,7 +98,7 @@ type SysMetrics struct {
 	// occur simultaneously, and as a result HeapAlloc tends to
 	// change smoothly (in contrast with the sawtooth that is
 	// typical of stop-the-world garbage collectors).
-	HeapAlloc    uint64
+	HeapAlloc uint64
 
 	// HeapSys is bytes of heap memory obtained from the OS.
 	//
@@ -111,7 +111,7 @@ type SysMetrics struct {
 	// for a measure of the latter).
 	//
 	// HeapSys estimates the largest size the heap has had.
-	HeapSys      uint64
+	HeapSys uint64
 
 	// HeapIdle is bytes in idle (unused) spans.
 	//
@@ -126,7 +126,7 @@ type SysMetrics struct {
 	// memory from the OS. If this difference is significantly
 	// larger than the heap size, it indicates there was a recent
 	// transient spike in live heap size.
-	HeapIdle     uint64
+	HeapIdle uint64
 
 	// HeapInuse is bytes in in-use spans.
 	//
@@ -139,7 +139,7 @@ type SysMetrics struct {
 	// not currently being used. This is an upper bound on
 	// fragmentation, but in general this memory can be reused
 	// efficiently.
-	HeapInuse    uint64
+	HeapInuse uint64
 
 	// HeapReleased is bytes of physical memory returned to the OS.
 	//
@@ -154,16 +154,16 @@ type SysMetrics struct {
 	//
 	// There is no StackIdle because unused stack spans are
 	// returned to the heap (and hence counted toward HeapIdle).
-	StackInuse   uint64
+	StackInuse uint64
 
 	// StackSys is bytes of stack memory obtained from the OS.
 	//
 	// StackSys is StackInuse, plus any memory obtained directly
 	// from the OS for OS thread stacks (which should be minimal).
-	StackSys     uint64
+	StackSys uint64
 
 	// GCSys is bytes of memory in garbage collection metadata.
-	GCSys        uint64
+	GCSys uint64
 
 	// NextGC is the target heap size of the next GC cycle.
 	//
@@ -171,11 +171,11 @@ type SysMetrics struct {
 	// At the end of each GC cycle, the target for the next cycle
 	// is computed based on the amount of reachable data and the
 	// value of GOGC.
-	NextGC       uint64
+	NextGC uint64
 
 	// LastGC is the time the last garbage collection finished, as
 	// nanoseconds since 1970 (the UNIX epoch).
-	LastGC       uint64
+	LastGC uint64
 
 	// PauseTotalNs is the cumulative nanoseconds in GC
 	// stop-the-world pauses since the program started.
@@ -185,7 +185,7 @@ type SysMetrics struct {
 	PauseTotalNs uint64
 
 	// NumGC is the number of completed GC cycles.
-	NumGC        uint32
+	NumGC uint32
 
 	// NumGoroutine returns the number of goroutines that currently exist.
 	NumGoroutine int
@@ -224,19 +224,19 @@ func StartSysMetricsMonitor() {
 	usr, _ := user.Current()
 	configPath := usr.HomeDir
 
-	needRotate, err := utils.LogMustRotate(configPath + SysMetricsLogFilename, MaxSysMetricsLogSize)
+	needRotate, err := utils.LogMustRotate(configPath+SysMetricsLogFilename, MaxSysMetricsLogSize)
 	if err != nil {
 		log.Fatalf("failed to check if log needs to be rotated: %s", err.Error())
 	}
 	if needRotate {
-		nBytes, err := utils.Rotate(configPath + SysMetricsLogFilename, configPath + SysMetricsTempFilename)
+		nBytes, err := utils.Rotate(configPath+SysMetricsLogFilename, configPath+SysMetricsTempFilename)
 		if err != nil {
 			log.Fatalf("failed to rotate sysMetrics log file: %s", err.Error())
 		}
 		log.Printf("successfully rotated sysMetrics log file: %d bytes rotated", nBytes)
 	}
 
-	file, err := os.OpenFile(configPath + SysMetricsLogFilename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(configPath+SysMetricsLogFilename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		log.Fatalf("failed to open sysMetrics log file: %s", err.Error())
 	}
@@ -271,10 +271,13 @@ func GetSysMetrics() response.CacheResponse {
 	for scanner.Scan() {
 		var entry SysMetrics
 		line := scanner.Text()
-		json.Unmarshal([]byte(line), &entry)
+		err := json.Unmarshal([]byte(line), &entry)
+		if err != nil {
+			log.Println(err)
+		}
 		data = append(data, entry)
 	}
-	
+
 	res := response.NewResponseFromValue(data)
 	return res
 }

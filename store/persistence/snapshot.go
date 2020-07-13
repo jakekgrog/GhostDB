@@ -1,21 +1,21 @@
 /*
  * Copyright (c) 2020, Jake Grogan
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *  * Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
- * 
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  *  * Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,7 +26,7 @@
  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+ */
 
 package persistence
 
@@ -43,39 +43,43 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+
 	// "time"
 
-	"github.com/ghostdb/ghostdb-cache-node/store/lru"
-	"github.com/ghostdb/ghostdb-cache-node/store/cache"
 	"github.com/ghostdb/ghostdb-cache-node/config"
+	"github.com/ghostdb/ghostdb-cache-node/store/cache"
+	"github.com/ghostdb/ghostdb-cache-node/store/lru"
 )
 
 const (
-	SNAPSHOT_FILENAME = "snapshot.gz"
+	snapshotFilename = "snapshot.gz"
 )
 
 func CreateSnapshot(cache *cache.Cache, config *config.Configuration) (bool, error) {
 	switch (*cache).(type) {
-	case *lru.LRUCache:
-		return createLruSnapshot((*cache).(*lru.LRUCache), config.EnableEncryption, config.Passphrase)
+	case *lru.Cache:
+		return createLruSnapshot((*cache).(*lru.Cache), config.EnableEncryption, config.Passphrase)
 	default:
 		return false, nil
 	}
 }
 
-func createLruSnapshot(cache *lru.LRUCache, encryption bool, passphrase ...string) (bool, error) {
+func createLruSnapshot(cache *lru.Cache, encryption bool, passphrase ...string) (bool, error) {
 	serialized, _ := json.MarshalIndent(cache, "", " ")
 
 	configPath, _ := os.UserConfigDir()
-	snapshotPath := configPath + SNAPSHOT_FILENAME
+	snapshotPath := configPath + snapshotFilename
 
 	if _, err := os.Stat(snapshotPath); err == nil {
 		os.Remove(snapshotPath)
 	}
 
-	f, err := os.OpenFile(snapshotPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(snapshotPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		f, err = os.Create(snapshotPath)
+		if err != nil {
+			log.Printf("failed to create snapshot file: %s", err.Error())
+		}
 	}
 
 	w, err := gzip.NewWriterLevel(f, gzip.BestCompression)
@@ -102,18 +106,16 @@ func createLruSnapshot(cache *lru.LRUCache, encryption bool, passphrase ...strin
 
 // GetSnapshotFilename builds the filename for the snapshot being taken
 func GetSnapshotFilename() string {
-	return SNAPSHOT_FILENAME
+	return snapshotFilename
 }
 
-
 // BuildCache rebuilds the cache from the byte stream of the snapshot
-func BuildCacheFromSnapshot(bs *[]byte) (lru.LRUCache, error) {
+func BuildCacheFromSnapshot(bs *[]byte) (lru.Cache, error) {
 	// Create a new cache instance.
-	var cache lru.LRUCache
+	var cache lru.Cache
 
 	// Unmarshal the byte stream and update the new cache object with the result.
 	err := json.Unmarshal(*bs, &cache)
-	
 	if err != nil {
 		log.Fatalf("failed to rebuild cache from snapshot: %s", err.Error())
 	}
@@ -121,12 +123,12 @@ func BuildCacheFromSnapshot(bs *[]byte) (lru.LRUCache, error) {
 	// Create a new doubly linked list object
 	ll := lru.InitList()
 
-	// Populate the caches hashtable and doubly linked list with the values 
+	// Populate the caches hashtable and doubly linked list with the values
 	// from the unmarshalled byte stream
 	for _, v := range cache.Hashtable {
 		n, err := lru.Insert(ll, v.Key, v.Value, v.TTL)
 		if err != nil {
-			return lru.LRUCache{}, err
+			return lru.Cache{}, err
 		}
 		cache.Hashtable[v.Key] = n
 	}
@@ -139,9 +141,8 @@ func BuildCacheFromSnapshot(bs *[]byte) (lru.LRUCache, error) {
 // ReadSnapshot reads the compressed snapshot file into
 // buffer and returns a reference to the buffer
 func ReadSnapshot(encryption bool, passphrase ...string) *[]byte {
-
 	configPath, _ := os.UserConfigDir()
-	snap, err := os.Open(configPath + SNAPSHOT_FILENAME)
+	snap, err := os.Open(configPath + snapshotFilename)
 	if err != nil {
 		log.Fatalf("failed to open snapshot: %s", err.Error())
 	}
@@ -149,7 +150,6 @@ func ReadSnapshot(encryption bool, passphrase ...string) *[]byte {
 	defer snap.Close()
 
 	file, err := gzip.NewReader(snap)
-
 	if err != nil {
 		log.Fatalf("failed to create gzip reader: %s", err.Error())
 	}
@@ -162,9 +162,8 @@ func ReadSnapshot(encryption bool, passphrase ...string) *[]byte {
 			log.Fatalf("failed to decrypt snapshot: %s", err.Error())
 		}
 		return &serializedData
-	} else {
-		return &byteStream
 	}
+	return &byteStream
 }
 
 // EncryptData is our encryption client to encrypt the serialized
@@ -202,7 +201,7 @@ func DecryptData(data []byte, passphrase string) ([]byte, error) {
 	nonceSize := gcm.NonceSize()
 	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
 
-	// Decrypt and authenticate the ciphertext. Authenticate the 
+	// Decrypt and authenticate the ciphertext. Authenticate the
 	// additional data and if successful, append the resulting data
 	// to the destination. The nonce must be NonceSize() bytes long
 	// and both it and the additional data must match the value passed
@@ -241,6 +240,6 @@ func generateHash(passphrase string) string {
 	// the result.
 	hasher := md5.New()
 	hasher.Write([]byte(passphrase))
-	// Return the hash as a hexidecimal value.
+	// Return the hash as a hexadecimal value.
 	return hex.EncodeToString(hasher.Sum(nil))
 }

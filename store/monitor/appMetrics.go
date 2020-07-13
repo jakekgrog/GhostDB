@@ -1,21 +1,21 @@
 /*
  * Copyright (c) 2020, Jake Grogan
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *  * Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
- * 
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  *  * Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,7 +26,7 @@
  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+ */
 
 package monitor
 
@@ -41,35 +41,35 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ghostdb/ghostdb-cache-node/utils"
 	"github.com/ghostdb/ghostdb-cache-node/constants"
 	"github.com/ghostdb/ghostdb-cache-node/store/response"
+	"github.com/ghostdb/ghostdb-cache-node/utils"
 )
 
 // AppMetricsLogFilePath Log file path
 const (
-	AppMetricsLogFilePath = "/ghostdb/ghostdb_appMetrics.log"
+	AppMetricsLogFilePath  = "/ghostdb/ghostdb_appMetrics.log"
 	AppMetricsTempFileName = "/ghostdb/ghostdb_appMetrics_tmp.log"
-	MaxAppMetricsLogSize = 500000
+	MaxAppMetricsLogSize   = 500000
 )
 
 // AppMetrics struct is used to record cache events
 type AppMetrics struct {
 	// TotalRequests is the cumulative number
 	// of requests to the cache node.
-	TotalRequests  uint64
+	TotalRequests uint64
 
 	// GetRequests is the cumulative number
 	// of Get requests to the cache node.
-	GetRequests    uint64
+	GetRequests uint64
 
 	// PutRequests is the cumulative number
 	// of Put requests to the cache node.
-	PutRequests    uint64
+	PutRequests uint64
 
 	// AddRequests it the cumulative number
 	// of Add requests to the cache node.
-	AddRequests    uint64
+	AddRequests uint64
 
 	// DeleteRequests is the cumulative number
 	// of Delete requests to the cache node.
@@ -77,7 +77,7 @@ type AppMetrics struct {
 
 	// FlushRequests is the cumulative number
 	// of Flush requests received by the cache node.
-	FlushRequests  uint64
+	FlushRequests uint64
 
 	// CacheMiss is the cumulative number of cache misses
 	// encountered by the cache node.
@@ -85,7 +85,7 @@ type AppMetrics struct {
 
 	// Stored is the cumulative number of key-value pairs
 	// successfully stored into the cache node.
-	Stored    uint64
+	Stored uint64
 
 	// Not stored is the cumulative number of key-value
 	// pairs unsuccessfully stored into the cache node.
@@ -94,25 +94,25 @@ type AppMetrics struct {
 	// Removed is the cumulative number of key-value pairs
 	// removed from the cache node. This includes key-value
 	// pairs removed by the cache crawlers.
-	Removed   uint64
+	Removed uint64
 
 	// NotFound is the cumulative number of key-value pairs
 	// not found in the cache during a deletion.
-	NotFound  uint64
+	NotFound uint64
 
 	// Flushed is the cumulative number of key-value pairs
 	// removed from the cache node by flushes
-	Flushed   uint64
+	Flushed uint64
 
 	// ErrFlush is the cumulative number of errors received
 	// when attempting to flush the cache node.
-	ErrFlush  uint64
+	ErrFlush uint64
 
 	// Mux is a mutex lock.
-	Mux            sync.Mutex
+	Mux sync.Mutex
 
 	// WriteInterval is the interval for writing log entries.
-	WriteInterval  time.Duration
+	WriteInterval time.Duration
 
 	// EntryTimestamp is a bool representing whether or not to
 	// include timestamps on the log entries.
@@ -122,20 +122,20 @@ type AppMetrics struct {
 // ReadAppMetrics struct is used to Unmarshal log entries
 type ReadAppMetrics struct {
 	Timestamp      string `json:"Timestamp"`
-	TotalRequests  uint64 
-	GetRequests    uint64 
-	PutRequests    uint64 
-	AddRequests    uint64 
-	DeleteRequests uint64 
-	FlushRequests  uint64 
+	TotalRequests  uint64
+	GetRequests    uint64
+	PutRequests    uint64
+	AddRequests    uint64
+	DeleteRequests uint64
+	FlushRequests  uint64
 
-	CacheMiss uint64 
+	CacheMiss uint64
 	Stored    uint64 `json: "-"`
 	NotStored uint64
 	Removed   uint64 `json: "-"`
-	NotFound  uint64 
+	NotFound  uint64
 	Flushed   uint64 `json: "-"`
-	ErrFlush  uint64 
+	ErrFlush  uint64
 }
 
 // Boot instantiates a appMetrics log struct and its corresponding log file
@@ -149,47 +149,47 @@ func NewAppMetrics(writeInterval time.Duration, entryTimestamp bool) *AppMetrics
 	configPath := usr.HomeDir
 
 	// Create application metrics file
-	file, err := os.OpenFile(configPath + AppMetricsLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
+	file, err := os.OpenFile(configPath+AppMetricsLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o755)
 	if err != nil {
 		fmt.Println(err) // Allows the CI runner to test successfully (Update when test_config is working)
 	}
 	defer file.Close()
 	// _, err := os.OpenFile(configPath+AppMetricsLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	
+
 	go Dump(&appMetrics)
-	
+
 	return &appMetrics
 }
 
 func WriteMetrics(appMetrics *AppMetrics, cmd string, resp response.CacheResponse) {
 	switch cmd {
-	case constants.STORE_GET:
+	case constants.StoreGet:
 		GetHit(appMetrics)
-		if resp.Status != 1{
+		if resp.Status != 1 {
 			CacheMiss(appMetrics)
 		}
-	case constants.STORE_PUT:
+	case constants.StorePut:
 		PutHit(appMetrics)
 		if resp.Status != 1 {
 			NotStored(appMetrics)
 		} else {
 			Stored(appMetrics)
 		}
-	case constants.STORE_ADD:
+	case constants.StoreAdd:
 		AddHit(appMetrics)
 		if resp.Status != 1 {
 			NotStored(appMetrics)
 		} else {
 			Stored(appMetrics)
 		}
-	case constants.STORE_DELETE:
+	case constants.StoreDelete:
 		DeleteHit(appMetrics)
 		if resp.Status != 1 {
 			NotFound(appMetrics)
 		} else {
 			Removed(appMetrics)
 		}
-	case constants.STORE_FLUSH:
+	case constants.StoreFlush:
 		FlushHit(appMetrics)
 		if resp.Status != 1 {
 			ErrFlush(appMetrics)
@@ -303,7 +303,6 @@ func PutHit(appMetrics *AppMetrics) {
 	defer appMetrics.Mux.Unlock()
 	atomic.AddUint64(&appMetrics.PutRequests, 1)
 	atomic.AddUint64(&appMetrics.TotalRequests, 1)
-	
 }
 
 // Dump writes the contents of the appMetrics struct to the appMetrics log file
@@ -315,23 +314,22 @@ func Dump(appMetrics *AppMetrics) {
 	for {
 		time.Sleep(appMetrics.WriteInterval * time.Second)
 
-		needRotate, err := utils.LogMustRotate(configPath + AppMetricsLogFilePath, MaxAppMetricsLogSize)
+		needRotate, err := utils.LogMustRotate(configPath+AppMetricsLogFilePath, MaxAppMetricsLogSize)
 		if err != nil {
 			log.Fatalf("failed to check if log needs to be rotated: %s", err.Error())
 		}
 		if needRotate {
-			nBytes, err := utils.Rotate(configPath + AppMetricsLogFilePath, configPath + AppMetricsTempFileName)
+			nBytes, err := utils.Rotate(configPath+AppMetricsLogFilePath, configPath+AppMetricsTempFileName)
 			if err != nil {
 				log.Fatalf("failed to rotate appMetrics log file: %s", err.Error())
 			}
 			log.Printf("successfully rotated appMetrics log file: %d bytes rotated", nBytes)
 		}
 
-		file, err := os.OpenFile(configPath + AppMetricsLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
+		file, err := os.OpenFile(configPath+AppMetricsLogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o755)
 		if err != nil {
 			fmt.Println(err) // Allows the CI runner to test successfully (Update when test_config is working)
 		}
-		defer file.Close()
 
 		if appMetrics.EntryTimestamp {
 			total = fmt.Sprintf(`{"Timestamp": "%s", "TotalRequsts": %d, `, time.Now().Format(time.RFC3339), appMetrics.TotalRequests)
@@ -345,7 +343,8 @@ func Dump(appMetrics *AppMetrics) {
 		deleteMetrics := fmt.Sprintf(`"DeleteRequests": %d, "NotFound": %d, `, appMetrics.DeleteRequests, appMetrics.NotFound)
 		flushMetrics := fmt.Sprintf(`"FlushRequests": %d, "ErrFlush": %d}`+"\n", appMetrics.FlushRequests, appMetrics.ErrFlush)
 
-		file.WriteString(total + getMetrics + putMetrics + addMetrics + deleteMetrics + flushMetrics)	
+		file.WriteString(total + getMetrics + putMetrics + addMetrics + deleteMetrics + flushMetrics)
+		file.Close()
 	}
 }
 
@@ -366,7 +365,10 @@ func GetAppMetrics() response.CacheResponse {
 	for scanner.Scan() {
 		var entry ReadAppMetrics
 		line := scanner.Text()
-		json.Unmarshal([]byte(line), &entry)
+		err := json.Unmarshal([]byte(line), &entry)
+		if err != nil {
+			log.Println(err)
+		}
 		entries = append(entries, entry)
 	}
 

@@ -1,21 +1,21 @@
 /*
  * Copyright (c) 2020, Jake Grogan
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *  * Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
- * 
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  *  * Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -26,7 +26,7 @@
  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+ */
 
 package lru
 
@@ -39,13 +39,13 @@ import (
 
 type Node struct {
 	// Key of the key-value pair
-	Key       string
+	Key string
 
 	// Value of the key-value pair
-	Value     interface{}
+	Value interface{}
 
 	// TTL is the time-to-live for the key-value pair
-	TTL       int64
+	TTL int64
 
 	// CreatedAt is the time the key-value pair was entered
 	// into the cache.
@@ -53,19 +53,19 @@ type Node struct {
 
 	// Prev points to the previous node in the doubly
 	// linked list. Omit this from snapshot serialization.
-	Prev      *Node `json:"-"`
+	Prev *Node `json:"-"`
 
 	// Next points to the next node in the doubly linked
 	// list. Omit this from snapshot serialization.
-	Next      *Node `json:"-"`
+	Next *Node `json:"-"`
 
 	// Mux is a mutex lock.
-	Mux       sync.Mutex
+	Mux sync.Mutex
 }
 
 type List struct {
 	// Head is the head node. It is a special case node.
-	// It does not get populated and is a reference node 
+	// It does not get populated and is a reference node
 	// for accessing the most recently used key-value pair.
 	Head *Node `json:"-"`
 
@@ -81,7 +81,6 @@ type List struct {
 
 // InitList initializes the doubly-linked list.
 func InitList() *List {
-
 	// Init the head node
 	headNode := &Node{
 		Key:       "",
@@ -151,20 +150,19 @@ func RemoveLast(ll *List) (*Node, error) {
 	// Lock access
 	ll.Mux.Lock()
 	defer ll.Mux.Unlock()
-	
+
 	if ll.Size == 0 {
 		return nil, errors.New("List is empty")
-	} else {
-		// Update reference pointers			
-		nodeToRemove := ll.Tail.Prev
-
-		nodeToRemove.Prev.Next = ll.Tail		
-		ll.Tail.Prev = nodeToRemove.Prev
-		
-		atomic.AddInt32(&ll.Size, -1)
-
-		return nodeToRemove, nil
 	}
+	// Update reference pointers
+	nodeToRemove := ll.Tail.Prev
+
+	nodeToRemove.Prev.Next = ll.Tail
+	ll.Tail.Prev = nodeToRemove.Prev
+
+	atomic.AddInt32(&ll.Size, -1)
+
+	return nodeToRemove, nil
 }
 
 // RemoveNode removes a specific node from the list.
@@ -185,7 +183,7 @@ func RemoveNode(ll *List, node *Node) (*Node, error) {
 
 	prevNode := node.Prev
 	nextNode := node.Next
-	
+
 	prevNode.Next = node.Next
 	nextNode.Prev = node.Prev
 
