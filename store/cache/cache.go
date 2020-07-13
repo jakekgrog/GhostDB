@@ -71,4 +71,10 @@ type Cache interface {
 
 	// GetHashtableReference is for internal use by crawlers and AOF
 	GetHashtableReference() *map[string]*lru.Node
+
+	// Enqueue adds an item to a queue
+	Enqueue(request.CacheRequest) response.CacheResponse
+
+	// Dequeue removes an item from a queue
+	Dequeue(request.CacheRequest) response.CacheResponse
 }
