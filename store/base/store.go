@@ -53,6 +53,8 @@ const (
 	StoreFlush      = "flush"
 	StoreNodeSize   = "nodeSize"
 	StoreAppMetrics = "getAppMetrics"
+	StoreEnqueue    = "enqueue"
+	StoreDequeue    = "dequeue"
 )
 
 // Policy types
@@ -161,6 +163,8 @@ func (baseStore *Store) registerHandlers() map[string]interface{} {
 		StoreDelete:   baseStore.Cache.Delete,
 		StoreFlush:    baseStore.Cache.Flush,
 		StoreNodeSize: baseStore.Cache.CountKeys,
+		StoreEnqueue:  baseStore.Cache.Enqueue,
+		StoreDequeue:  baseStore.Cache.Dequeue, 
 	}
 }
 

@@ -42,9 +42,11 @@ type Queue struct {
 }
 
 func New() *Queue {
-	var queue *Queue = new (Queue)
-	queue.size = 0
-	return queue
+	return &Queue{
+		current: nil,
+		last: nil,
+		size: 0,
+	}
 }
 
 func (q *Queue) Enqueue(item interface{}) {
