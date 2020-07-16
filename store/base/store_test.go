@@ -51,3 +51,39 @@ func TestStore(t *testing.T) {
 	x = store.Execute("put", request.NewRequestFromValues("Key1", "NewValue1", -1))
 	utils.AssertEqual(t, x.Status, int32(1), "")
 }
+
+func TestStoreQueue(t *testing.T) {
+	conf := config.InitializeConfiguration()
+
+	store := NewStore("LRU")
+	store.BuildStore(conf)
+	store.RunStore()
+
+	// Enqueue a value
+	req := request.NewRequestFromValues("QueueKey", "first", -1)
+	res := store.Execute("enqueue", req)
+	utils.AssertEqual(t, res.Message, "STORED", "")
+
+	// Enqueu another value
+	req = request.NewRequestFromValues("QueueKey", "second", -1)
+	res = store.Execute("enqueue", req)
+	utils.AssertEqual(t, res.Message, "STORED", "")
+
+	// Dequeue and assert the value is the same as the first queued item
+	req = request.NewRequestFromValues("QueueKey", "", -1)
+	res = store.Execute("dequeue", req)
+	utils.AssertEqual(t, res.Message, "OK", "")
+	utils.AssertEqual(t, res.Gobj.Value, "first", "")
+
+	// Dequeue and assert the value is the same as the second queued item
+	req = request.NewRequestFromValues("QueueKey", "", -1)
+	res = store.Execute("dequeue", req)
+	utils.AssertEqual(t, res.Message, "OK", "")
+	utils.AssertEqual(t, res.Gobj.Value, "second", "")
+
+	// Dequeue and assert the value is nil (queue empty)
+	req = request.NewRequestFromValues("QueueKey", "", -1)
+	res = store.Execute("dequeue", req)
+	utils.AssertEqual(t, res.Message, "OK", "")
+	utils.AssertEqual(t, res.Gobj.Value, nil, "")
+}

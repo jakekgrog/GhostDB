@@ -38,6 +38,7 @@ import (
 	"github.com/ghostdb/ghostdb-cache-node/config"
 	"github.com/ghostdb/ghostdb-cache-node/store/request"
 	"github.com/ghostdb/ghostdb-cache-node/store/response"
+	"github.com/ghostdb/ghostdb-cache-node/store/structures/queue"
 )
 
 const (
@@ -48,6 +49,7 @@ const (
 	NotFound  = "NOT_FOUND"
 	FLUSHED   = "FLUSH"
 	ErrFlush  = "ERR_FLUSH"
+	NotQueue  = "NOT_QUEUE"
 )
 
 // LRUCache represents a cache object
@@ -243,7 +245,6 @@ func (cache *Cache) Delete(args request.CacheRequest) response.CacheResponse {
 
 // Flush removes all key/value pairs from the cache even if they have not expired
 func (cache *Cache) Flush(args request.CacheRequest) response.CacheResponse {
-	log.Println("ARGS", args)
 	for k := range cache.Hashtable {
 		n, _ := RemoveLast(cache.DLL)
 		if n == nil {
@@ -297,6 +298,116 @@ func (cache *Cache) DeleteByKey(key string) response.CacheResponse {
 		cache.Full = false
 
 		return response.NewResponseFromMessage(REMOVED, 1)
+	}
+	return response.NewResponseFromMessage(NotFound, 0)
+}
+
+// Enqueue adds an item to a queue
+func (cache *Cache) Enqueue(args request.CacheRequest) response.CacheResponse {
+	key := args.Gobj.Key
+	value := args.Gobj.Value
+	ttl := args.Gobj.TTL
+
+	if !cache.Full {
+		inCache := keyInCache(cache, key)
+		// Queue doesn't exist so create one
+		if !inCache {
+			// Create empty queue and queue the value
+			q := queue.New()
+			q.Enqueue(value)
+
+			// Insert the queue into the cache
+			newNode, _ := Insert(cache.DLL, key, q, ttl)
+			insertIntoHashtable(cache, key, newNode)
+			
+			// Increase count
+			cache.Mux.Lock()
+			atomic.AddInt32(&cache.Count, 1)
+			cache.Mux.Unlock()
+
+			if cache.Count == cache.Size {
+				cache.Full = true
+			}
+		} else {
+			// Queue exists, enqueue the value
+			node := cache.Hashtable[key]
+
+			// Cast to queue and enqueue
+			q, ok := node.Value.(*queue.Queue)
+			if !ok {
+				return response.NewResponseFromMessage(NotQueue, 0)
+			}
+			q.Enqueue(value)
+
+			return response.NewResponseFromMessage(STORED, 1)
+		}
+	} else {
+		// Cache full, remove the LRU item and add queue
+		// SPECIAL CASE: Just enqueue the value
+		inCache := keyInCache(cache, key)
+		if inCache {
+			// Get the node
+			node := cache.Hashtable[key]
+
+			// Enqueue the value
+			q, ok := node.Value.(*queue.Queue)
+			if !ok {
+				return response.NewResponseFromMessage(NotQueue, 0)
+			}
+			q.Enqueue(value)
+			return response.NewResponseFromMessage(STORED, 1)
+		}
+		// Not in the cache, make room
+		// Remove LRU item
+		n, _ := RemoveLast(cache.DLL)
+		deleteFromHashtable(cache, n.Key)
+
+		// Create empty queue and queue the value
+		q := queue.New()
+		q.Enqueue(value)
+
+		// Insert the queue into the cache
+		newNode, _ := Insert(cache.DLL, key, q, ttl)
+		insertIntoHashtable(cache, key, newNode)
+	}
+	return response.NewResponseFromMessage(STORED, 1)
+}
+
+// Dequeue removes an item from a queue
+func (cache *Cache) Dequeue(args request.CacheRequest) response.CacheResponse {
+	key := args.Gobj.Key
+
+	cache.Mux.Lock()
+	queueNode, ok := cache.Hashtable[key]
+	cache.Mux.Unlock()
+	if ok {
+		if queueNode == nil {
+			return response.NewResponseFromMessage(NotFound, 0)
+		}
+
+		// Cast to Queue and dequeue the item
+		queue, ok := queueNode.Value.(*queue.Queue)
+		if !ok {
+			return response.NewResponseFromMessage(NotQueue, 0)
+		}
+		value := queue.Dequeue()
+
+		// TODO: Make moving node to MRU a method
+		// Queue node is now MRU so move it to top
+		cache.Mux.Lock()
+		n, _ := RemoveNode(cache.DLL, queueNode)
+		cache.Mux.Unlock()
+
+		cache.Mux.Lock()
+		node, _ := Insert(cache.DLL, n.Key, n.Value, n.TTL)
+		cache.Mux.Unlock()
+
+		cache.Mux.Lock()
+		cache.Hashtable[key] = node
+		cache.Mux.Unlock()
+
+		// Return the dequeued item
+		return response.NewResponseFromValue(value)
 	}
 	return response.NewResponseFromMessage(NotFound, 0)
 }
