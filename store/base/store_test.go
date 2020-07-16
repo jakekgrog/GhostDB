@@ -55,12 +55,7 @@ func TestStore(t *testing.T) {
 func TestStoreQueue(t *testing.T) {
 	conf := config.InitializeConfiguration()
 
-<<<<<<< HEAD
 	store := NewStore("LRU")
-=======
-	var store *Store
-	store = NewStore("LRU")
->>>>>>> Added Queue command support to store
 	store.BuildStore(conf)
 	store.RunStore()
 
