@@ -1,4 +1,4 @@
-keyspaceSize: 543
+keyspaceSize: 65536
 sysMetricInterval: 10
 appMetricInterval: 10
 defaultTTL: -1

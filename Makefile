@@ -31,31 +31,43 @@ GO_BUILD=$(GO_CMD) build
 GO_CLEAN=$(GO_CMD) clean
 GO_TEST=$(GO_CMD) test
 GO_GET=$(GO_CMD) get
-NAME=ghostdb
+NAME=ghostdbservice
+BIN_NAME=ghostdb
 DIR=./cmd
 CONF_DIR=/etc/ghostdb
 
 all: build install group
 
 build:
-	$(GO_BUILD) -o $(NAME) -v $(DIR)
+	$(GO_BUILD) -o $(BIN_NAME) -v $(DIR)
+
+clean:
+	rm -rf $(BIN_NAME)
 
 install-dev:
-	$(GO_BUILD) -o $(NAME) -v $(DIR)
-	/bin/bash -c 'if grep -q "$(NAME)" /etc/passwd; then echo "ghostdbservice user already exists!"; else useradd $(NAME) -s /sbin/nologin -M && echo "ghostdbservice user created"; fi'
+	$(GO_BUILD) -o $(BIN_NAME) -v $(DIR)
+	/bin/bash -c 'if grep -q "$(NAME)" /etc/passwd; then echo "ghostdbservice user already exists!"; else useradd -m -s /sbin/nologin $(NAME) && echo "ghostdbservice user created"; fi'
 	
 	/bin/bash -c 'if grep -q "$(NAME)" /etc/group; then echo "Ghostdb group already exists!"; else groupadd ghostdb && echo "Ghostdb group created!"; fi'
 	
 	/bin/bash -c 'if [ -d "$(CONF_DIR)" ]; then echo "ghostdb config directory already exists!"; else mkdir /etc/ghostdb && echo "ghostdb config direcotry created"; chown -R ghostdbservice:ghostdbservice /etc/ghostdb; fi'
 	
-	sudo cp $(NAME) /bin/
+	sudo cp $(BIN_NAME) /bin/
 	sudo cp init/ghostdb.service /lib/systemd/system
-	sudo cp config/ghostdbConf.json $(CONF_DIR)
+	sudo cp config/ghostdbConf.yml $(CONF_DIR)
 	
-	sudo chmod 755 /bin/$(NAME)
+	sudo chmod 755 /bin/$(BIN_NAME)
 	sudo chmod 755 /lib/systemd/system/ghostdb.service
-	sudo chmod 755 $(CONF_DIR)/ghostdbConf.json
+	sudo chmod 755 $(CONF_DIR)/ghostdbConf.yml
 	sudo chown -R ghostdbservice:ghostdbservice /home/ghostdbservice
 	systemctl daemon-reload
 	systemctl start ghostdb
-	sudo rm $(NAME)
+	sudo rm $(BIN_NAME)
+
+uninstall-dev:
+	systemctl stop ghostdb
+	systemctl disable ghostdb
+	sudo rm -rf $(CONF_DIR)
+	sudo rm -rf /lib/systemd/system/ghostdb.service
+	sudo rm -rf /bin/$(BIN_NAME)
+	sudo userdel -r $(NAME)
