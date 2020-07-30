@@ -34,6 +34,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
+	"sync"
 
 	"github.com/ghostdb/ghostdb-cache-node/store/base"
 	"github.com/ghostdb/ghostdb-cache-node/store/request"
@@ -52,6 +54,7 @@ var (
 	GhostAppMetrics = "/getAppMetrics"
 	GhostPing       = "/ping"
 	GhostNodeSize   = "/nodeSize"
+	GhostClientConnections = "/getActiveConnections"
 )
 
 var store *base.Store
@@ -60,15 +63,25 @@ var store *base.Store
 func NodeConfig(s *base.Store) {
 	store = s
 }
-
 // Router passes control to handlers
 func Router() {
+	clientMap := make(map[string]int64)
+	var mu sync.RWMutex
 	routes := func(ctx *fasthttp.RequestCtx) {
 		req := new(request.CacheRequest)
 		path := ctx.Path()
 		cmd := string(path[1:])
 		body := ctx.PostBody()
-
+		clientIP := strings.Split(string(ctx.Host()),":")[0]
+		// if the map doesn't contain the ip create a key or else increment the counter for the key
+		mu.Lock()
+		_ , isIPPresent := clientMap[clientIP]
+		if !isIPPresent {
+			clientMap[clientIP] = 1
+		} else {
+			clientMap[clientIP]++
+		}
+		mu.Unlock()
 		if err := json.Unmarshal(body, &req); err != nil {
 			log.Println(err)
 			ctx.Request.Header.Set("Content-Type", "application/json; charset=UTF-8")
@@ -84,7 +97,9 @@ func Router() {
 			res = systemmonitor.GetSysMetrics()
 		} else if cmd == "ping" {
 			res = response.NewPingResponse()
-		} else {
+		} else if cmd == "getActiveConnections" {
+			res = response.NewCountConnectionsResponse(len(clientMap))
+		}else {
 			res = store.Execute(cmd, *req)
 		}
 
@@ -94,6 +109,12 @@ func Router() {
 		if err := json.NewEncoder(ctx).Encode(res); err != nil {
 			panic(err)
 		}
+		mu.Lock()
+		clientMap[clientIP]--
+		if clientMap[clientIP] == 0 {
+			delete(clientMap,clientIP)
+		}
+		mu.Unlock()
 	}
 	err := fasthttp.ListenAndServe(":7991", routes)
 	if err != nil {
