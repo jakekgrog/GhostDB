@@ -97,3 +97,12 @@ func NewPingResponse() CacheResponse {
 		Error:   "",
 	}
 }
+
+func NewCountConnectionsResponse(clientsConnected int) CacheResponse {
+	return CacheResponse{
+		Gobj:	object.NewCacheObjectFromValue(clientsConnected),
+		Status: 1,
+		Message: "Active Connections",
+		Error: "",
+	}
+}
