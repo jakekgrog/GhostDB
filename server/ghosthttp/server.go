@@ -34,7 +34,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strings"
 	"sync"
 
 	"github.com/ghostdb/ghostdb-cache-node/store/base"
@@ -72,8 +71,7 @@ func Router() {
 		path := ctx.Path()
 		cmd := string(path[1:])
 		body := ctx.PostBody()
-		clientIP := strings.Split(string(ctx.Host()),":")[0]
-		// if the map doesn't contain the ip create a key or else increment the counter for the key
+		clientIP := ctx.RemoteIP().String()
 		mu.Lock()
 		_ , isIPPresent := clientMap[clientIP]
 		if !isIPPresent {
