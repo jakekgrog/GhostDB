@@ -5,7 +5,7 @@ To install a GhostDB Cache Node on a server you want to act as a cache for your 
 You can also compile from source. To do this run the following:
 
 ```
-> go build
+> make build
 ```
 
 GhostDB uses port 7991 so be sure to allow communication on that port for any servers GhostDB Cache Node is running on.
