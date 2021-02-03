@@ -32,6 +32,7 @@ GO_CLEAN=$(GO_CMD) clean
 GO_TEST=$(GO_CMD) test
 GO_GET=$(GO_CMD) get
 NAME=ghostdb
+NAME_WIN=ghostdb.exe
 DIR=./cmd
 CONF_DIR=/etc/ghostdb
 
@@ -39,6 +40,9 @@ all: build install group
 
 build:
 	$(GO_BUILD) -o $(NAME) -v $(DIR)
+
+build-win:
+	$(GO_BUILD) -o $(NAME_WIN) -v $(DIR)
 
 install-dev:
 	$(GO_BUILD) -o $(NAME) -v $(DIR)
