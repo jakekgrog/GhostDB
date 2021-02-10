@@ -31,18 +31,38 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/user"
 	"os/signal"
 	"syscall"
+	"time"
+	"net/http"
+	"bytes"
+	"encoding/json"
 
-	"github.com/ghostdb/ghostdb-cache-node/server/ghost_http"
+	"github.com/ghostdb/ghostdb-cache-node/server"
 	"github.com/ghostdb/ghostdb-cache-node/store/base"
 	"github.com/ghostdb/ghostdb-cache-node/store/persistence"
 	"github.com/ghostdb/ghostdb-cache-node/store/monitor"
 	"github.com/ghostdb/ghostdb-cache-node/config"
 	"github.com/ghostdb/ghostdb-cache-node/system_monitor"
+)
+
+const (
+	DefaultRaftAddr = ":11000"
+	DefaultHTTPAddr = ":7991"
+	retainSnapshotCount = 2
+	raftTimeout = 10 * time.Second
+)
+
+var (
+	httpAddr string
+	raftAddr string
+	joinAddr string
+	nodeID   string
 )
 
 // Node configuration file
@@ -55,11 +75,19 @@ var store *base.Store
 var sysMetricsScheduler *system_monitor.SysMetricsScheduler
 
 func init() {
+	flag.StringVar(&httpAddr, "http", DefaultHTTPAddr, "Set HTTP bind address")
+	flag.StringVar(&raftAddr, "raft", DefaultRaftAddr, "Set Raft bind address")
+	flag.StringVar(&joinAddr, "join", "", "Set join address, if any")
+	flag.StringVar(&nodeID, "id", "", "Node ID")
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] <raft-data-path> \n", os.Args[0])
+		flag.PrintDefaults()
+	}
+
 	conf = config.InitializeConfiguration()
 
 	usr, _ := user.Current()
 	configPath := usr.HomeDir
-	log.Println("LOG PATH: "+configPath)
 
 	err := os.Mkdir(configPath+"/ghostdb", 0777)
 	if err != nil {
@@ -80,11 +108,39 @@ func init() {
 	}
 	defer appMetricsFile.Close()
 
+	sysMetricsScheduler = system_monitor.NewSysMetricsScheduler(conf.SysMetricInterval)
+}
+
+func main() {
+	flag.Parse()
+
+	if flag.NArg() == 0 {
+		fmt.Fprintf(os.Stderr, "No Raft storage directory specified\n")
+		os.Exit(1)
+	}
+
+	// Ensure Raft sotrage exists
+	raftDir := flag.Arg(0)
+	if raftDir == "" {
+		fmt.Fprintf(os.Stderr, "No Raft storage director specified\n")
+		os.Exit(1)
+	}
+	os.MkdirAll(raftDir, 0700)
+
+	go system_monitor.StartSysMetrics(sysMetricsScheduler)
+	log.Println("successfully started sysMetrics monitor...")
 
 	store = base.NewStore("LRU") // FUTURE: Read store type from config
 	store.BuildStore(conf)
 
+	store.RaftDir = raftDir
+	store.RaftBind = raftAddr
+	if err := store.Open(joinAddr == "", nodeID); err != nil {
+		log.Fatalf("failed to open store: %s", err.Error())
+	} 
 
+	usr, _ := user.Current()
+	configPath := usr.HomeDir
 	// Build the cache from a snapshot if snaps enabled.
 	// If the snapshot does not exist, then build a new cache.
 	if conf.SnapshotEnabled {
@@ -109,23 +165,41 @@ func init() {
 
 	store.RunStore()
 
-	sysMetricsScheduler = system_monitor.NewSysMetricsScheduler(conf.SysMetricInterval)
-}
+	log.Println("Starting store...")
 
-func main() {
-	go system_monitor.StartSysMetrics(sysMetricsScheduler)
-	log.Println("successfully started sysMetrics monitor...")
-	ghost_http.NodeConfig(store)
-	log.Println("successfully started GhostDB Node server...")
-	log.Println("GhostDB started successfully...")
+	sysMetricsScheduler = system_monitor.NewSysMetricsScheduler(conf.SysMetricInterval)
+
+	service := server.NewService(httpAddr, store)
+	go service.Start()
+
+	log.Println("Starting service...")
+
+	if joinAddr != "" {
+		if err := join(joinAddr, raftAddr, nodeID); err != nil {
+			log.Fatalf("failed to join node at %s: %s", joinAddr, err.Error())
+		}
+	}
+
+	log.Println("started successfully ...")
 
 	t := make(chan os.Signal)
 	signal.Notify(t, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-t
-		log.Println("exiting...")
-		os.Exit(1)
-	}()
+	<-t
 
-	ghost_http.Router()
+	log.Println("exiting ...")
+	
+}
+
+func join(joinAddr, raftAddr, nodeID string) error {
+	b, err := json.Marshal(map[string]string{"addr": raftAddr, "id": nodeID})
+	if err != nil {
+		return err
+	}
+	resp, err := http.Post(fmt.Sprintf("http://%s/join", joinAddr), "application-type/json", bytes.NewReader(b))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	return nil
 }
