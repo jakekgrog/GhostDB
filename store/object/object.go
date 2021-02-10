@@ -33,7 +33,7 @@ package object
 type CacheObject struct {
 	Key   string `json:"Key"`
 	Value interface{} `json:"Value"`
-	TTL   int64 `json:"TTL"`
+	TTL   int64 `json:"TTL,string"`
 }
 
 func NewCacheObjectFromValue(value interface{}) CacheObject{

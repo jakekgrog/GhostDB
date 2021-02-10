@@ -33,7 +33,15 @@ package base
 import (
 	"log"
 	"time"
+
+	"fmt"
+	"net"
+	"os"
+	"regexp"
+	"strings"
+	"encoding/json"
 	
+	"github.com/hashicorp/raft"
 	"github.com/ghostdb/ghostdb-cache-node/store/cache"
 	"github.com/ghostdb/ghostdb-cache-node/store/lru"
 	"github.com/ghostdb/ghostdb-cache-node/store/crawlers"
@@ -55,6 +63,10 @@ const (
 	STORE_APP_METRICS = "getAppMetrics"
 )
 
+const (
+	retainSnapshotCount = 2
+	raftTimeout = 10*time.Second
+)
 // Policy types
 const (
 	LRU_TYPE = "LRU"   // Least recently used
@@ -81,16 +93,38 @@ type BaseStore interface {
 	CreateSnapshot()
 	// RunStore starts the store schedulers
 	RunStore()
+	// Join joins a node, identified by nodeID and located at addr, to this store.
+	// The node must be ready to respond to Raft communications at that address.
+	Join(nodeID string, addr string) error
+	// Open opens the store. If enableSingle is set, and there are no existing peers,
+	// then this node becomes the first node, and therefore leader, of the cluster.
+	// localID should be the server identifier for this node.
+	Open(enableSingle bool, localID string) error
 }
 
 type Store struct {
-	Conf   config.Configuration
-	policy   string
-	Cache    cache.Cache
-	commands map[string]interface{}
-	crawlerScheduler *crawlers.CrawlerScheduler
-	snapshotScheduler *persistence.SnapshotScheduler
-	appMetrics *monitor.AppMetrics
+	RaftDir            string
+	RaftBind           string
+	Raft               *raft.Raft
+	ServerID           string
+	NumericalID        int
+	PeersLength        int
+
+	Conf               config.Configuration
+	policy             string
+	Cache              cache.Cache
+	commands           map[string]interface{}
+	crawlerScheduler   *crawlers.CrawlerScheduler
+	snapshotScheduler  *persistence.SnapshotScheduler
+	appMetrics         *monitor.AppMetrics
+}
+
+// Command is the struct used by the replication log.
+// All write commands can be written to the replciation log
+// in this format
+type Command struct {
+	Cmd  string
+	Args request.CacheRequest
 }
 
 func NewStore(policy string) *Store {
@@ -100,22 +134,47 @@ func NewStore(policy string) *Store {
 }
 
 func (store *Store) Execute(cmd string, args request.CacheRequest) response.CacheResponse {
-	// Handle App metrics
-	if cmd == "getAppMetrics" {
-		return monitor.GetAppMetrics()
-	}
-
-	// Handle all other commands
-	if _, ok := store.commands[cmd]; !ok {
+	// All commands that are not write commands don't need to call Apply() on the store.
+	// We can handle them as before.
+	if cmd == "get" || cmd == "getAppMetrics"{
+		// Handle get
+		if cmd == "get" {
+			if _, ok := store.commands[cmd]; !ok {
+				return response.BadCommandResponse(cmd)
+			}
+			
+			execResult := store.commands[cmd].(func(request.CacheRequest) response.CacheResponse)(args)
+			if store.Conf.PersistenceAOF {
+				writeAof(cmd, &(args))
+			}
+			return execResult
+		}
+		// Handle getAppMetrics
 		return response.BadCommandResponse(cmd)
+	} else {
+		// All write commands need to be applied to the replication log
+		c := &Command{
+			Cmd: cmd,
+			Args: args,
+		}
+
+		b, err := json.Marshal(c)
+		if err != nil {
+			return response.BadCommandResponse(cmd)
+		}
+
+		applyFuture := store.Raft.Apply(b, raftTimeout)
+		if err := applyFuture.Error(); err != nil {
+			return response.NewResponseFromMessage("Error commiting to raft cluster", 500)
+		}
+
+		res, ok := applyFuture.Response().(response.CacheResponse)
+		if !ok {
+			return response.NewResponseFromMessage("Error commiting to raft cluster 2", 500)
+		}
+
+		return res
 	}
-	execResult := store.commands[cmd].(func(request.CacheRequest) response.CacheResponse)(args)
-	if store.Conf.PersistenceAOF {
-		writeAof(cmd, &args)
-	}
-	// CHECK RESPONSE AND SEND TO APP METRICS
-	monitor.WriteMetrics(store.appMetrics, cmd, execResult)
-	return execResult
 }
 
 func writeAof(cmd string, args *request.CacheRequest) {
@@ -202,4 +261,133 @@ func (store *Store) newCacheFromPolicy(policy string) cache.Cache {
 	default:
 		return nil
 	}
+}
+
+func (store *Store) Join(nodeID string, addr string) error {
+	fmt.Printf("received join request for remote node %s at %s\n", nodeID, addr)
+
+	configFuture := store.Raft.GetConfiguration()
+	if err := configFuture.Error(); err != nil {
+		fmt.Printf("failed to get raft configuration: %v", err)
+		return err
+	}
+
+	for _, srv := range configFuture.Configuration().Servers {
+		// If a node already exists with either the joining node's ID or address,
+		// that node may need to be removed from the config first.
+		if srv.ID == raft.ServerID(nodeID) || srv.Address == raft.ServerAddress(addr) {
+			// However if *both* the ID and the address are the same, then nothing -- not even
+			// a join operation -- is needed.
+			if srv.Address == raft.ServerAddress(addr) && srv.ID == raft.ServerID(nodeID) {
+				fmt.Printf("node %s at %s already member of cluster, ignoring join request", nodeID, addr)
+				return nil
+			}
+
+			future := store.Raft.RemoveServer(srv.ID, 0, 0)
+			if err := future.Error(); err != nil {
+				return fmt.Errorf("error removing existing node %s at %s: %s", nodeID, addr, err)
+			}
+		}
+	}
+
+	// Add a voter. The voters will decide who is master when a new leader election is called.
+	f := store.Raft.AddVoter(raft.ServerID(nodeID), raft.ServerAddress(addr), 0, 0)
+	if f.Error() != nil {
+		return f.Error()
+	}
+	fmt.Printf("node %s at %s joined successfully", nodeID, addr)
+	return nil
+}
+
+func (store *Store) Open(enableSingle bool, localID string) error {
+	config := raft.DefaultConfig()
+	config.LocalID = raft.ServerID(localID)
+	store.ServerID = localID
+	
+	addr, err := net.ResolveTCPAddr("tcp", store.RaftBind)
+	if err != nil {
+		return err
+	}
+	
+	transport, err := raft.NewTCPTransport(store.RaftBind, addr, 3, raftTimeout, os.Stderr)
+	if err != nil {
+		return err
+	}
+
+	snapshots, err := raft.NewFileSnapshotStore(store.RaftDir, retainSnapshotCount, os.Stderr)
+	if err != nil {
+		return fmt.Errorf("file snapshot store: %s", err)
+	}
+
+	var logStore raft.LogStore
+	var stableStore raft.StableStore
+	logStore = raft.NewInmemStore()
+	stableStore = raft.NewInmemStore()
+
+	ra, err := raft.NewRaft(config, (*fsm)(store), logStore, stableStore, snapshots, transport)
+	if err != nil {
+		return fmt.Errorf("new raft: %s", err)
+	}
+	store.Raft = ra
+
+	if enableSingle {
+		configuration := raft.Configuration{
+			Servers: []raft.Server{
+				{
+					ID:      config.LocalID,
+					Address: transport.LocalAddr(),
+				},
+			},
+		}
+		ra.BootstrapCluster(configuration)
+	}
+
+	return nil
+}
+
+type fsm Store
+
+// GetNumericalID is used to get the numerical ID of a node from the list of peers
+// parameters: ID (a string identifier of the node), peers (an array of current nodes in the cluster)
+// returns: int (the numeric value of a node's indentifier), otherwise -1
+func GetNumericalID(ID string, peers []string) int {
+	for i, value := range peers {
+		if value == ID {
+			return i
+		}
+	}
+	return -1
+}
+
+
+func PeersList(rawConfig string) []string {
+	peers := []string{}
+	re := regexp.MustCompile(`ID:[0-9A-z]*`)
+	for _, peer := range re.FindAllString(rawConfig, -1) {
+		peers = append(peers, strings.Replace(peer, "ID:", "", -1))
+	}
+	return peers
+}
+
+// Apply applies a Raft log entry to the key-value store.
+func (f *fsm) Apply(l *raft.Log) interface{} {
+	// Handle all other commands
+	var c Command
+	
+	if err := json.Unmarshal(l.Data, &c); err != nil {
+		panic(fmt.Sprintf("failed to unmarshal command: %s", err.Error()))
+	}
+
+	if _, ok := f.commands[c.Cmd]; !ok {
+		return response.BadCommandResponse(c.Cmd)
+	}
+	
+	execResult := f.commands[c.Cmd].(func(request.CacheRequest) response.CacheResponse)(c.Args)
+	if f.Conf.PersistenceAOF {
+		writeAof(c.Cmd, &(c.Args))
+	}
+	// CHECK RESPONSE AND SEND TO APP METRICS
+	monitor.WriteMetrics(f.appMetrics, c.Cmd, execResult)
+	
+	return execResult
 }
