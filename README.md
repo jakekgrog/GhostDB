@@ -5,7 +5,24 @@
 
 [![Discord](https://img.shields.io/badge/chat-Join%20us!-green?style=for-the-badge&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/ZkT5Sdf)
 
+## Update - 03/03/2021
 
+### Where we've been
+
+GhostDB stemmed from a University project. Due to the nature of these projects (time constraints etc.), we feel some corners were cut. For example, we opted for the memcached model of distribution to save on time as it was easier to implement. However, this wasn't the original vision of GhostDB. Myself and Connor also started new jobs and these took up a good chunk of our time. This combined with just finishing a really busy final year in Univeristy, we decided to mothball the project for a while. We're finally returning to it and hopefully transforming it into what we had originally planned. 
+
+### A new roadmap
+
+We are revising our roadmap below and plan to release an updated version soon but before we do here is a brief rundown on what we want
+
+- Transition away from the memcached model and move to a consistent, partition tolerant system (with limited fault tolerance too) by implementing the raft concensus protocol. (This is almost complete)
+- Release a CLI to allow users to easily manage their clusters
+- Re-build our SDKs from the ground up to allow users to interact with GhostDB with more ease than is currently possible.
+- Implement new data types to broaden GhostDBs use cases.
+- Local caching to give an even greater performance boost to users.
+- Release AWS Amazon Machine Images (AMIs) and Google Compute Engine Images to allow users to easily create GhostDB clusters in the cloud with only a few clicks.
+
+And of course, we also want to continue improving on our performance :)
 
 ## :books: Overview
 
