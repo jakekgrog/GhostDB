@@ -21,6 +21,11 @@ We are revising our roadmap below and plan to release an updated version soon bu
 - Implement new data types to broaden GhostDBs use cases.
 - Local caching to give an even greater performance boost to users.
 - Release AWS Amazon Machine Images (AMIs) and Google Compute Engine Images to allow users to easily create GhostDB clusters in the cloud with only a few clicks.
+- Updates to the website that include a download centre and documentation improvements.
+
+### Contributing
+
+Unfortunately, with work and life we simply don't have the time at the moment to manage pull requests from anyone else. However, we are still accepting issues and are encouraging them.
 
 And of course, we also want to continue improving on our performance :)
 
