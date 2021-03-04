@@ -32,6 +32,8 @@ package base
 
 import (
 	"testing"
+	"time"
+	"io/ioutil"
 
 	"github.com/ghostdb/ghostdb-cache-node/config"
 	"github.com/ghostdb/ghostdb-cache-node/utils"
@@ -44,6 +46,21 @@ func TestStore(t *testing.T) {
 
 	var store *Store
 	store = NewStore("LRU")
+	tmpDir, _ := ioutil.TempDir("", "store_test")
+	store.RaftDir = tmpDir
+	store.RaftBind = "127.0.0.1:0"
+
+	if store == nil {
+		t.Fatalf("failed to create store")
+	}
+
+	if err := store.Open(true, "node0"); err != nil {
+		t.Fatalf("failed to open store: %s", err)
+	}
+
+	// Simple way to ensure there is a leader.
+	time.Sleep(3 * time.Second)
+
 	store.BuildStore(conf)
 	store.RunStore()
 
