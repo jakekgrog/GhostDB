@@ -59,6 +59,8 @@ func (service *Service) Start() {
 			res = response.NewPingResponse()
 		} else if cmd == "join" {
 			handleJoin(ctx, service.store)
+		} else if cmd == "getLeader" {
+			res = handleGetLeader(ctx, service.store)
 		} else {
 			fmt.Println(service.store.RaftDir)
 			res = service.store.Execute(cmd, *req)
@@ -80,6 +82,10 @@ func (service *Service) Start() {
 type JoinRequest struct {
 	Addr   string `json:"addr"`
 	Id interface{} `json:"id"`
+}
+
+func handleGetLeader(ctx *fasthttp.RequestCtx, store *base.Store) response.CacheResponse {
+	return response.NewResponseFromMessage(string(store.Raft.Leader()), http.StatusOK)
 }
 
 func handleJoin(ctx *fasthttp.RequestCtx, store *base.Store) {
